@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista Materiali</title>
+    <!-- Collegamento al Manifest della PWA -->
+    <link rel="manifest" href="manifest.json">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        /* Stili per la scrollbar personalizzata */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        /* Stile per la modale */
+        .modal {
+            display: none; /* Nascosto di default */
+            position: fixed; /* Posizione fissa */
+            z-index: 1000; /* Davanti a tutto */
+            left: 0;
+            top: 0;
+            width: 100%; /* Larghezza intera */
+            height: 100%; /* Altezza intera */
+            overflow: auto; /* Abilita lo scroll se necessario */
+            background-color: rgba(0,0,0,0.4); /* Sfondo semi-trasparente */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border-radius: 12px;
+            width: 80%;
+            max-width: 400px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            position: relative;
+        }
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Stile per la Toast Notification */
+        #toast-notification {
+            visibility: hidden; /* Nascosta di default */
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1001;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 30px; /* Posizionata in basso */
+            font-size: 17px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            opacity: 0;
+            transition: visibility 0s, opacity 0.5s linear;
+        }
+
+        #toast-notification.show {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-gray-900 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-2xl transform hover:scale-105 transition-transform duration-300">
+        <!-- Logo TPC Group -->
+        <div class="flex justify-center mb-4">
+            <img src="https://media.licdn.com/dms/image/v2/C4E0BAQEp_ynYF_UExA/company-logo_200_200/company-logo_200_200/0/1642092550756/tpc_group_srl_logo?e=2147483647&v=beta&t=3f1SQUfd-kQeqQojJo7NUD_O2cbSdu0nO8hTz2maZs4" alt="TPC Group Logo" class="rounded-full shadow-md w-24 h-24 object-contain">
+        </div>
+        <h1 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-6">
+            Lista Materiali
+        </h1>
+
+        <div class="mb-6">
+            <label for="barcodeInput" class="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-2">
+                Inserisci 12 o 13 cifre per il codice a barre (salvataggio automatico):
+            </label>
+            <input
+                type="number"
+                id="barcodeInput"
+                class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                placeholder="Es. 123456789012"
+                oninput="generateAndDisplayBarcode(this.value)"
+            />
+        </div>
+
+        <!-- Area di visualizzazione del codice a barre generato -->
+        <div class="flex justify-center items-center h-28 bg-gray-50 dark:bg-gray-700 rounded-lg p-2 mb-6 border border-dashed border-gray-300 dark:border-gray-600">
+            <canvas id="barcodeCanvas" class="max-w-full h-auto"></canvas>
+            <p id="barcodePlaceholder" class="text-gray-500 dark:text-gray-400 hidden">Il codice a barre apparirà qui</p>
+        </div>
+
+        <!-- Nuovo bottone per Eliminare Ultimo Codice -->
+        <button
+            id="deleteLastButton"
+            class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 mb-4"
+        >
+            Elimina Ultimo Materiale
+        </button>
+
+        <!-- Contenitore per i bottoni Esporta PDF, Svuota Lista e Condividi -->
+        <div class="flex flex-wrap justify-center gap-4 mb-8">
+            <button
+                id="exportPdfButton"
+                class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full shadow-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            >
+                Esporta PDF
+            </button>
+            <button
+                id="clearListButton"
+                class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-full shadow-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            >
+                Svuota Lista
+            </button>
+            <button
+                id="sharePdfButton"
+                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-full shadow-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+                Condividi PDF via WhatsApp
+            </button>
+        </div>
+
+        <!-- Lista dei codici a barre "salvati" -->
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 border-b pb-2">Lista Materiali (<span id="savedCount">0</span>)</h2>
+        <div id="savedBarcodesList" class="space-y-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+            <!-- I codici a barre salvati verranno inseriti qui dal JS -->
+            <p id="noSavedBarcodes" class="text-gray-500 dark:text-gray-400 text-center">Nessun materiale salvato. Inizia a digitarne e salvarne uno!</p>
+        </div>
+    </div>
+
+    <!-- Modale per messaggi e conferme -->
+    <div id="myModal" class="modal">
+        <div class="modal-content dark:bg-gray-700 dark:text-white">
+            <span class="close-button dark:text-gray-300">&times;</span>
+            <p id="modalMessage" class="text-lg text-gray-800 dark:text-gray-200 mb-4"></p>
+            <div id="modalButtons" class="flex justify-center gap-4">
+                <button id="modalConfirmBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg hidden">Sì, Elimina</button>
+                <button id="modalCancelBtn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hidden">Annulla</button>
+                <button id="modalOkBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-notification"></div>
+
+    <!-- JsBarcode CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <!-- jsPDF CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script>
+        // Registra il Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                // Per abilitare completamente le funzionalità PWA (installazione su schermata Home),
+                // l'applicazione deve essere servita tramite un server web (anche locale)
+                // e, idealmente, su una connessione HTTPS.
+                // L'errore "Failed to register a ServiceWorker: The URL protocol of the script (':') is not supported."
+                // si verifica spesso quando il file HTML viene aperto direttamente dal disco (file://)
+                // o da un contesto non sicuro/non servito da un server web.
+                if (window.location.protocol !== 'http:' && window.location.protocol !== 'https:') {
+                    console.warn('Avviso: Il Service Worker potrebbe non registrarsi correttamente se l\'applicazione non è servita tramite HTTP/HTTPS. Attualmente il protocollo è:', window.location.protocol);
+                }
+
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker registrato con successo:', registration);
+                    })
+                    .catch(error => {
+                        console.error('Registrazione Service Worker fallita:', error);
+                    });
+            });
+        }
+
+        // Inizializza jsPDF dal namespace window
+        const { jsPDF } = window.jspdf;
+
+        const barcodeInput = document.getElementById('barcodeInput');
+        const barcodeCanvas = document.getElementById('barcodeCanvas');
+        const barcodePlaceholder = document.getElementById('barcodePlaceholder');
+        const exportPdfButton = document.getElementById('exportPdfButton');
+        const deleteLastButton = document.getElementById('deleteLastButton');
+        const clearListButton = document.getElementById('clearListButton');
+        const sharePdfButton = document.getElementById('sharePdfButton');
+        const savedBarcodesList = document.getElementById('savedBarcodesList');
+        const savedCountSpan = document.getElementById('savedCount');
+        const noSavedBarcodesMessage = document.getElementById('noSavedBarcodes');
+
+        let saveTimeout; // Variabile per il debounce
+
+        // Modale e i suoi bottoni
+        const modal = document.getElementById('myModal');
+        const modalMessage = document.getElementById('modalMessage');
+        const closeButton = document.querySelector('.close-button');
+        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+        const modalCancelBtn = document.getElementById('modalCancelBtn');
+        const modalOkBtn = document.getElementById('modalOkBtn');
+
+        let currentOnConfirmCallback = null;
+        let currentOnCancelCallback = null;
+
+        // Funzione per mostrare la modale (ora supporta conferma)
+        function showModal(message, isConfirmation = false, onConfirm = null, onCancel = null) {
+            modalMessage.textContent = message;
+            modal.style.display = 'flex'; // Usa flex per centrare
+
+            if (isConfirmation) {
+                modalOkBtn.classList.add('hidden');
+                modalConfirmBtn.classList.remove('hidden');
+                modalCancelBtn.classList.remove('hidden');
+                currentOnConfirmCallback = onConfirm;
+                currentOnCancelCallback = onCancel;
+            } else {
+                modalOkBtn.classList.remove('hidden');
+                modalConfirmBtn.classList.add('hidden');
+                modalCancelBtn.classList.add('hidden');
+                currentOnConfirmCallback = null;
+                currentOnConfirmCallback = null;
+            }
+        }
+
+        // Funzione per chiudere la modale
+        function closeModal() {
+            modal.style.display = 'none';
+            currentOnConfirmCallback = null;
+            currentOnCancelCallback = null;
+        }
+
+        // Listener per i bottoni della modale
+        closeButton.onclick = closeModal;
+        modalOkBtn.onclick = closeModal; // OK button just closes
+
+        modalConfirmBtn.onclick = () => {
+            if (currentOnConfirmCallback) {
+                currentOnConfirmCallback();
+            }
+            closeModal();
+        };
+
+        modalCancelBtn.onclick = () => {
+            if (currentOnCancelCallback) {
+                currentOnCancelCallback();
+            }
+            closeModal();
+        };
+
+        // Chiudi la modale se l'utente clicca fuori dal contenuto
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        // Funzione per mostrare la toast notification
+        function showToast(message) {
+            const toast = document.getElementById('toast-notification');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000); // La toast scompare dopo 3 secondi
+        }
+
+
+        // Funzione per generare e visualizzare il codice a barre E SALVARE AUTOMATICAMENTE
+        function generateAndDisplayBarcode(value) {
+            clearTimeout(saveTimeout); // Resetta il timer ad ogni nuova digitazione
+
+            const trimmedValue = value.trim();
+
+            if (!trimmedValue) {
+                barcodeCanvas.style.display = 'none';
+                barcodePlaceholder.classList.remove('hidden');
+                clearTimeout(saveTimeout); // Clear any pending save
+                return;
+            }
+
+            // Validation for EAN13
+            if (!/^\d{12,13}$/.test(trimmedValue)) { // Checks for 12 or 13 digits
+                barcodeCanvas.style.display = 'none';
+                barcodePlaceholder.classList.remove('hidden');
+                showToast("EAN13 richiede esattamente 12 o 13 cifre numeriche.");
+                return;
+            }
+
+            try {
+                JsBarcode(barcodeCanvas, trimmedValue, {
+                    format: "EAN13", // Changed to EAN13
+                    displayValue: true,
+                    height: 80,
+                    width: 2,
+                    margin: 10,
+                    lineColor: "#333",
+                    font: "Inter",
+                    fontSize: 16
+                });
+                barcodeCanvas.style.display = 'block';
+                barcodePlaceholder.classList.add('hidden');
+
+                // Avvia il timer per il salvataggio automatico (dopo 700ms di inattività)
+                saveTimeout = setTimeout(() => {
+                    const valueToSave = trimmedValue; // Use the validated value
+                    if (valueToSave) {
+                        const barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
+                        
+                        // Per EAN13, se l'input è 12 cifre, JsBarcode calcola la 13a.
+                        // Per il salvataggio, salviamo il valore che è stato visualizzato,
+                        // che sarà quello con la checksum calcolata se l'input era 12.
+                        // È meglio salvare il valore che JsBarcode ha effettivamente usato.
+                        // Per fare ciò, possiamo estrarre il testo dal canvas generato.
+                        // Tuttavia, per semplicità e coerenza, continueremo a salvare l'input utente.
+                        // Se l'utente inserisce 12 cifre, salveremo 12 cifre, anche se JsBarcode ne visualizza 13.
+                        // Se si vuole salvare esattamente la stringa con checksum, è più complesso.
+                        // Per ora, proseguiamo con il salvataggio dell'input.
+                        
+                        barcodes.push({
+                            value: valueToSave,
+                            timestamp: Date.now()
+                        });
+                        localStorage.setItem('savedBarcodes', JSON.stringify(barcodes));
+                        loadSavedBarcodes();
+                        showToast(`Materiale "${valueToSave}" salvato automaticamente!`);
+                        barcodeInput.value = '';
+                        generateAndDisplayBarcode('');
+                    }
+                }, 700);
+
+            } catch (e) {
+                console.error("Errore nella generazione del codice a barre EAN13:", e);
+                barcodeCanvas.style.display = 'none';
+                barcodePlaceholder.classList.remove('hidden');
+                showModal("Errore durante la generazione del codice a barre EAN13. Controlla che le cifre siano numeriche e valide.");
+            }
+        }
+
+        // Funzione per caricare e visualizzare i codici a barre salvati
+        function loadSavedBarcodes() {
+            const barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
+            savedBarcodesList.innerHTML = '';
+            savedCountSpan.textContent = barcodes.length;
+
+            if (barcodes.length === 0) {
+                noSavedBarcodesMessage.classList.remove('hidden');
+                savedBarcodesList.appendChild(noSavedBarcodesMessage);
+                deleteLastButton.disabled = true;
+                deleteLastButton.classList.add('opacity-50', 'cursor-not-allowed');
+                exportPdfButton.disabled = true;
+                exportPdfButton.classList.add('opacity-50', 'cursor-not-allowed');
+                clearListButton.disabled = true;
+                clearListButton.classList.add('opacity-50', 'cursor-not-allowed');
+                sharePdfButton.disabled = true;
+                sharePdfButton.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                noSavedBarcodesMessage.classList.add('hidden');
+                barcodes.forEach(barcode => {
+                    const barcodeItem = document.createElement('div');
+                    barcodeItem.className = 'flex items-center bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow-sm';
+                    barcodeItem.innerHTML = `
+                        <div class="flex-grow">
+                            <p class="text-gray-800 dark:text-gray-200 font-semibold text-lg">${barcode.value}</p>
+                            <p class="text-gray-500 dark:text-gray-400 text-sm">${new Date(barcode.timestamp).toLocaleString()}</p>
+                        </div>
+                        <canvas class="w-24 h-auto barcode-list-item"></canvas>
+                    `;
+                    savedBarcodesList.appendChild(barcodeItem);
+
+                    const listItemCanvas = barcodeItem.querySelector('.barcode-list-item');
+                    if (listItemCanvas && typeof JsBarcode !== 'undefined') {
+                        try {
+                            JsBarcode(listItemCanvas, barcode.value, {
+                                format: "EAN13", // Changed to EAN13
+                                displayValue: false,
+                                height: 50,
+                                width: 1.5,
+                                margin: 0
+                            });
+                        } catch (e) {
+                            console.error("Errore nella generazione del codice a barre EAN13 per l'elemento lista:", e);
+                            // Potresti mostrare un'icona di errore o un messaggio qui
+                        }
+                    }
+                });
+                deleteLastButton.disabled = false;
+                deleteLastButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                exportPdfButton.disabled = false;
+                exportPdfButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                clearListButton.disabled = false;
+                clearListButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                sharePdfButton.disabled = false;
+                sharePdfButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // Funzione per eliminare l'ultimo codice a barre salvato (con conferma)
+        deleteLastButton.addEventListener('click', () => {
+            let barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
+            if (barcodes.length > 0) {
+                const lastItemValue = barcodes[barcodes.length - 1].value;
+                showModal(
+                    `Sei sicuro di voler eliminare l'ultimo materiale: "${lastItemValue}"?`,
+                    true, // Is a confirmation request
+                    () => { // Callback for confirmation ("Yes")
+                        barcodes.pop(); // Remove the last element
+                        localStorage.setItem('savedBarcodes', JSON.stringify(barcodes));
+                        loadSavedBarcodes(); // Update the list
+                        showToast(`Materiale "${lastItemValue}" eliminato con successo!`);
+                    },
+                    () => { // Callback for cancellation ("No")
+                        showToast("Eliminazione annullata.");
+                    }
+                );
+            } else {
+                showModal("Non ci sono materiali da eliminare.");
+            }
+        });
+
+        // Funzione per svuotare l'intera lista (con conferma)
+        clearListButton.addEventListener('click', () => {
+            let barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
+            if (barcodes.length > 0) {
+                showModal(
+                    "Sei sicuro di voler svuotare l'intera lista dei materiali? Questa azione è irreversibile.",
+                    true, // Is a confirmation request
+                    () => { // Callback for confirmation ("Yes")
+                        localStorage.removeItem('savedBarcodes'); // Remove all data
+                        loadSavedBarcodes(); // Update the list (which will be empty)
+                        showToast("Lista materiali svuotata con successo!");
+                    },
+                    () => { // Callback for cancellation ("No")
+                        showToast("Svuotamento lista annullato.");
+                    }
+                );
+            } else {
+                showModal("La lista è già vuota. Non ci sono materiali da svuotare.");
+            }
+        });
+
+
+        // Funzione per generare il PDF e restituire il Blob (per download o condivisione)
+        function generatePdfBlob() {
+            const doc = new jsPDF();
+            let yPos = 10;
+
+            doc.setFontSize(22);
+            doc.text("Lista Materiali", 105, yPos, { align: 'center' });
+            yPos += 10;
+
+            const barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
+            const currentBarcodeValue = barcodeInput.value.trim();
+            let currentBarcodeImageUrl = null;
+
+            // Genera l'immagine del codice a barre attuale solo se l'input è valido EAN13
+            if (currentBarcodeValue && /^\d{12,13}$/.test(currentBarcodeValue)) {
+                try {
+                    const tempCanvasForCurrent = document.createElement('canvas');
+                    JsBarcode(tempCanvasForCurrent, currentBarcodeValue, {
+                        format: "EAN13", // Changed to EAN13
+                        displayValue: true,
+                        height: 80,
+                        width: 2,
+                        margin: 10,
+                        lineColor: "#333",
+                        font: "Inter",
+                        fontSize: 16
+                    });
+                    currentBarcodeImageUrl = tempCanvasForCurrent.toDataURL("image/png");
+                } catch (e) {
+                    console.error("Errore nella generazione del codice a barre EAN13 attuale per PDF:", e);
+                }
+            }
+
+
+            if (currentBarcodeImageUrl && currentBarcodeValue) {
+                doc.setFontSize(16);
+                doc.text(`Codice Attuale: ${currentBarcodeValue}`, 10, yPos);
+                yPos += 10;
+                doc.addImage(currentBarcodeImageUrl, 'PNG', 10, yPos, 100, 30);
+                yPos += 40;
+            } else {
+                doc.setFontSize(16);
+                doc.text("Nessun codice a barre attuale da esportare.", 10, yPos);
+                yPos += 15;
+            }
+
+            if (barcodes.length > 0) {
+                doc.setFontSize(18);
+                doc.text("Lista Materiali:", 10, yPos);
+                yPos += 10;
+
+                barcodes.forEach((barcode, index) => {
+                    if (yPos + 50 > doc.internal.pageSize.height - 10) {
+                        doc.addPage();
+                        yPos = 10;
+                        doc.setFontSize(18);
+                        doc.text("Lista Materiali (continua)", 105, yPos, { align: 'center' });
+                        yPos += 10;
+                    }
+
+                    const tempCanvas = document.createElement('canvas');
+                    try {
+                        JsBarcode(tempCanvas, barcode.value, {
+                            format: "EAN13", // Changed to EAN13
+                            displayValue: false,
+                            height: 50,
+                            width: 1.5,
+                            margin: 0
+                        });
+                        const barcodeImgData = tempCanvas.toDataURL("image/png");
+                        doc.setFontSize(14);
+                        doc.text(`- ${barcode.value} (${new Date(barcode.timestamp).toLocaleString()})`, 10, yPos);
+                        yPos += 5;
+                        doc.addImage(barcodeImgData, 'PNG', 10, yPos, 80, 25);
+                        yPos += 35;
+                    } catch (e) {
+                        console.error("Errore nella generazione del codice a barre EAN13 per PDF (elemento lista):", e);
+                        doc.setFontSize(14);
+                        doc.text(`- ${barcode.value} (Errore: formato EAN13 non valido)`, 10, yPos);
+                        yPos += 15; // Spazio per il messaggio di errore
+                    }
+                });
+            } else if (!currentBarcodeImageUrl) {
+                doc.setFontSize(16);
+                doc.text("Nessun materiale salvato da esportare.", 10, yPos);
+            }
+            return doc.output('blob'); // Returns the PDF as a Blob
+        }
+
+        // Funzione per esportare i codici a barre in PDF (download)
+        exportPdfButton.addEventListener('click', () => {
+            const pdfBlob = generatePdfBlob();
+            const url = URL.createObjectURL(pdfBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "lista_materiali.pdf";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url); // Cleans up the object URL
+            showToast("PDF generato e pronto per il download!");
+        });
+
+        // Funzione per condividere il PDF via WhatsApp (o Web Share API)
+        sharePdfButton.addEventListener('click', async () => {
+            const pdfBlob = generatePdfBlob();
+            const fileName = "lista_materiali.pdf";
+            const filesArray = [new File([pdfBlob], fileName, { type: 'application/pdf' })];
+
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: filesArray })) {
+                try {
+                    await navigator.share({
+                        files: filesArray,
+                        title: 'Lista Materiali',
+                        text: 'Ecco la lista dei materiali generata dalla mia app.',
+                    });
+                    showToast('PDF condiviso con successo!');
+                } catch (error) {
+                    console.error('Errore durante la condivisione:', error);
+                    showModal("Impossibile condividere direttamente il PDF. Si prega di scaricare il PDF (Esporta PDF) e condividerlo manualmente tramite WhatsApp.");
+                }
+            } else {
+                showModal("Il tuo browser o dispositivo non supporta la condivisione diretta di file. Si prega di scaricare il PDF (Esporta PDF) e condividerlo manualmente tramite WhatsApp.");
+            }
+        });
+
+        // Carica i codici a barre salvati all'avvio dell'app
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSavedBarcodes();
+            // Mostra il placeholder iniziale
+            barcodeCanvas.style.display = 'none';
+            barcodePlaceholder.classList.remove('hidden');
+        });
+    </script>
+
+</body>
+</html>

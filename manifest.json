@@ -1,0 +1,20 @@
+{
+  "name": "Lista Materiali App",
+  "short_name": "Materiali",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f0f8ff",
+  "theme_color": "#4285F4",
+  "icons": [
+    {
+      "src": "https://placehold.co/192x192/4285F4/FFFFFF?text=LMA",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://placehold.co/512x512/4285F4/FFFFFF?text=LMA",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
