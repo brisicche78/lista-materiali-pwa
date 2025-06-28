@@ -160,9 +160,10 @@
 
         <!-- Lista dei codici a barre "salvati" -->
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 border-b pb-2">Lista Materiali (<span id="savedCount">0</span>)</h2>
-        <div id="savedBarcodesList" class="space-y-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+        <!-- Modificato qui: aggiunto 'grid grid-cols-1 md:grid-cols-2 gap-4' -->
+        <div id="savedBarcodesList" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
             <!-- I codici a barre salvati verranno inseriti qui dal JS -->
-            <p id="noSavedBarcodes" class="text-gray-500 dark:text-gray-400 text-center">Nessun materiale salvato. Inizia a digitarne e salvarne uno!</p>
+            <p id="noSavedBarcodes" class="text-gray-500 dark:text-gray-400 text-center col-span-full">Nessun materiale salvato. Inizia a digitarne e salvarne uno!</p>
         </div>
     </div>
 
@@ -191,12 +192,6 @@
         // Registra il Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // Per abilitare completamente le funzionalità PWA (installazione su schermata Home),
-                // l'applicazione deve essere servita tramite un server web (anche locale)
-                // e, idealmente, su una connessione HTTPS.
-                // L'errore "Failed to register a ServiceWorker: The URL protocol of the script (':') is not supported."
-                // si verifica spesso quando il file HTML viene aperto direttamente dal disco (file://)
-                // o da un contesto non sicuro/non servito da un server web.
                 if (window.location.protocol !== 'http:' && window.location.protocol !== 'https:') {
                     console.warn('Avviso: Il Service Worker potrebbe non registrarsi correttamente se l\'applicazione non è servita tramite HTTP/HTTPS. Attualmente il protocollo è:', window.location.protocol);
                 }
@@ -214,6 +209,7 @@
         // Inizializza jsPDF dal namespace window
         const { jsPDF } = window.jspdf;
 
+        // Rimosso productNameInput
         const barcodeInput = document.getElementById('barcodeInput');
         const barcodeCanvas = document.getElementById('barcodeCanvas');
         const barcodePlaceholder = document.getElementById('barcodePlaceholder');
@@ -305,9 +301,9 @@
         function generateAndDisplayBarcode(value) {
             clearTimeout(saveTimeout); // Resetta il timer ad ogni nuova digitazione
 
-            const trimmedValue = value.trim();
+            const trimmedBarcodeValue = value.trim();
 
-            if (!trimmedValue) {
+            if (!trimmedBarcodeValue) {
                 barcodeCanvas.style.display = 'none';
                 barcodePlaceholder.classList.remove('hidden');
                 clearTimeout(saveTimeout); // Clear any pending save
@@ -315,7 +311,7 @@
             }
 
             // Validation for EAN13
-            if (!/^\d{12,13}$/.test(trimmedValue)) { // Checks for 12 or 13 digits
+            if (!/^\d{12,13}$/.test(trimmedBarcodeValue)) { // Checks for 12 or 13 digits
                 barcodeCanvas.style.display = 'none';
                 barcodePlaceholder.classList.remove('hidden');
                 showToast("EAN13 richiede esattamente 12 o 13 cifre numeriche.");
@@ -323,8 +319,8 @@
             }
 
             try {
-                JsBarcode(barcodeCanvas, trimmedValue, {
-                    format: "EAN13", // Changed to EAN13
+                JsBarcode(barcodeCanvas, trimmedBarcodeValue, {
+                    format: "EAN13",
                     displayValue: true,
                     height: 80,
                     width: 2,
@@ -338,29 +334,20 @@
 
                 // Avvia il timer per il salvataggio automatico (dopo 700ms di inattività)
                 saveTimeout = setTimeout(() => {
-                    const valueToSave = trimmedValue; // Use the validated value
+                    const valueToSave = trimmedBarcodeValue;
+                    
                     if (valueToSave) {
                         const barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
                         
-                        // Per EAN13, se l'input è 12 cifre, JsBarcode calcola la 13a.
-                        // Per il salvataggio, salviamo il valore che è stato visualizzato,
-                        // che sarà quello con la checksum calcolata se l'input era 12.
-                        // È meglio salvare il valore che JsBarcode ha effettivamente usato.
-                        // Per fare ciò, possiamo estrarre il testo dal canvas generato.
-                        // Tuttavia, per semplicità e coerenza, continueremo a salvare l'input utente.
-                        // Se l'utente inserisce 12 cifre, salveremo 12 cifre, anche se JsBarcode ne visualizza 13.
-                        // Se si vuole salvare esattamente la stringa con checksum, è più complesso.
-                        // Per ora, proseguiamo con il salvataggio dell'input.
-                        
                         barcodes.push({
-                            value: valueToSave,
+                            value: valueToSave, // Reverted to 'value'
                             timestamp: Date.now()
                         });
                         localStorage.setItem('savedBarcodes', JSON.stringify(barcodes));
                         loadSavedBarcodes();
-                        showToast(`Materiale "${valueToSave}" salvato automaticamente!`);
-                        barcodeInput.value = '';
-                        generateAndDisplayBarcode('');
+                        showToast(`Materiale "${valueToSave}" salvato automaticamente!`); // Only barcode value
+                        barcodeInput.value = ''; // Pulisci l'input del codice a barre
+                        generateAndDisplayBarcode(''); // Pulisci l'immagine generata
                     }
                 }, 700);
 
@@ -380,6 +367,7 @@
 
             if (barcodes.length === 0) {
                 noSavedBarcodesMessage.classList.remove('hidden');
+                noSavedBarcodesMessage.classList.add('col-span-full'); // Ensure it spans both columns
                 savedBarcodesList.appendChild(noSavedBarcodesMessage);
                 deleteLastButton.disabled = true;
                 deleteLastButton.classList.add('opacity-50', 'cursor-not-allowed');
@@ -391,24 +379,24 @@
                 sharePdfButton.classList.add('opacity-50', 'cursor-not-allowed');
             } else {
                 noSavedBarcodesMessage.classList.add('hidden');
-                barcodes.forEach(barcode => {
+                barcodes.forEach(item => {
                     const barcodeItem = document.createElement('div');
-                    barcodeItem.className = 'flex items-center bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow-sm';
+                    barcodeItem.className = 'flex flex-col items-center bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow-sm w-full'; // Ensure it takes full width of grid cell
                     barcodeItem.innerHTML = `
-                        <div class="flex-grow">
-                            <p class="text-gray-800 dark:text-gray-200 font-semibold text-lg">${barcode.value}</p>
-                            <p class="text-gray-500 dark:text-gray-400 text-sm">${new Date(barcode.timestamp).toLocaleString()}</p>
+                        <div class="flex-grow text-center mb-2">
+                            <p class="text-gray-800 dark:text-gray-200 font-semibold text-lg break-all">${item.value}</p>
+                            <p class="text-gray-500 dark:text-gray-400 text-sm">${new Date(item.timestamp).toLocaleString()}</p>
                         </div>
-                        <canvas class="w-24 h-auto barcode-list-item"></canvas>
+                        <canvas class="w-full h-auto barcode-list-item"></canvas>
                     `;
                     savedBarcodesList.appendChild(barcodeItem);
 
                     const listItemCanvas = barcodeItem.querySelector('.barcode-list-item');
                     if (listItemCanvas && typeof JsBarcode !== 'undefined') {
                         try {
-                            JsBarcode(listItemCanvas, barcode.value, {
-                                format: "EAN13", // Changed to EAN13
-                                displayValue: false,
+                            JsBarcode(listItemCanvas, item.value, {
+                                format: "EAN13",
+                                displayValue: false, // Don't show text here, it's already in the p tag
                                 height: 50,
                                 width: 1.5,
                                 margin: 0
@@ -434,17 +422,18 @@
         deleteLastButton.addEventListener('click', () => {
             let barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
             if (barcodes.length > 0) {
-                const lastItemValue = barcodes[barcodes.length - 1].value;
+                const lastItem = barcodes[barcodes.length - 1];
+                const displayValue = lastItem.value;
                 showModal(
-                    `Sei sicuro di voler eliminare l'ultimo materiale: "${lastItemValue}"?`,
-                    true, // Is a confirmation request
-                    () => { // Callback for confirmation ("Yes")
-                        barcodes.pop(); // Remove the last element
+                    `Sei sicuro di voler eliminare l'ultimo materiale: "${displayValue}"?`,
+                    true,
+                    () => {
+                        barcodes.pop();
                         localStorage.setItem('savedBarcodes', JSON.stringify(barcodes));
-                        loadSavedBarcodes(); // Update the list
-                        showToast(`Materiale "${lastItemValue}" eliminato con successo!`);
+                        loadSavedBarcodes();
+                        showToast(`Materiale "${displayValue}" eliminato con successo!`);
                     },
-                    () => { // Callback for cancellation ("No")
+                    () => {
                         showToast("Eliminazione annullata.");
                     }
                 );
@@ -459,13 +448,13 @@
             if (barcodes.length > 0) {
                 showModal(
                     "Sei sicuro di voler svuotare l'intera lista dei materiali? Questa azione è irreversibile.",
-                    true, // Is a confirmation request
-                    () => { // Callback for confirmation ("Yes")
-                        localStorage.removeItem('savedBarcodes'); // Remove all data
-                        loadSavedBarcodes(); // Update the list (which will be empty)
+                    true,
+                    () => {
+                        localStorage.removeItem('savedBarcodes');
+                        loadSavedBarcodes();
                         showToast("Lista materiali svuotata con successo!");
                     },
-                    () => { // Callback for cancellation ("No")
+                    () => {
                         showToast("Svuotamento lista annullato.");
                     }
                 );
@@ -479,6 +468,7 @@
         function generatePdfBlob() {
             const doc = new jsPDF();
             let yPos = 10;
+            const lineHeight = 7;
 
             doc.setFontSize(22);
             doc.text("Lista Materiali", 105, yPos, { align: 'center' });
@@ -488,12 +478,11 @@
             const currentBarcodeValue = barcodeInput.value.trim();
             let currentBarcodeImageUrl = null;
 
-            // Genera l'immagine del codice a barre attuale solo se l'input è valido EAN13
             if (currentBarcodeValue && /^\d{12,13}$/.test(currentBarcodeValue)) {
                 try {
                     const tempCanvasForCurrent = document.createElement('canvas');
                     JsBarcode(tempCanvasForCurrent, currentBarcodeValue, {
-                        format: "EAN13", // Changed to EAN13
+                        format: "EAN13",
                         displayValue: true,
                         height: 80,
                         width: 2,
@@ -508,10 +497,11 @@
                 }
             }
 
-
             if (currentBarcodeImageUrl && currentBarcodeValue) {
                 doc.setFontSize(16);
-                doc.text(`Codice Attuale: ${currentBarcodeValue}`, 10, yPos);
+                let currentItemText = "Codice Attuale: ";
+                currentItemText += currentBarcodeValue;
+                doc.text(currentItemText, 10, yPos);
                 yPos += 10;
                 doc.addImage(currentBarcodeImageUrl, 'PNG', 10, yPos, 100, 30);
                 yPos += 40;
@@ -526,8 +516,10 @@
                 doc.text("Lista Materiali:", 10, yPos);
                 yPos += 10;
 
-                barcodes.forEach((barcode, index) => {
-                    if (yPos + 50 > doc.internal.pageSize.height - 10) {
+                barcodes.forEach((item, index) => {
+                    const itemHeight = lineHeight + 35;
+
+                    if (yPos + itemHeight > doc.internal.pageSize.height - 10) {
                         doc.addPage();
                         yPos = 10;
                         doc.setFontSize(18);
@@ -537,31 +529,32 @@
 
                     const tempCanvas = document.createElement('canvas');
                     try {
-                        JsBarcode(tempCanvas, barcode.value, {
-                            format: "EAN13", // Changed to EAN13
+                        JsBarcode(tempCanvas, item.value, {
+                            format: "EAN13",
                             displayValue: false,
                             height: 50,
                             width: 1.5,
                             margin: 0
                         });
                         const barcodeImgData = tempCanvas.toDataURL("image/png");
+
                         doc.setFontSize(14);
-                        doc.text(`- ${barcode.value} (${new Date(barcode.timestamp).toLocaleString()})`, 10, yPos);
+                        doc.text(`${item.value} (${new Date(item.timestamp).toLocaleString()})`, 10, yPos);
                         yPos += 5;
                         doc.addImage(barcodeImgData, 'PNG', 10, yPos, 80, 25);
                         yPos += 35;
                     } catch (e) {
                         console.error("Errore nella generazione del codice a barre EAN13 per PDF (elemento lista):", e);
                         doc.setFontSize(14);
-                        doc.text(`- ${barcode.value} (Errore: formato EAN13 non valido)`, 10, yPos);
-                        yPos += 15; // Spazio per il messaggio di errore
+                        doc.text(`- ${item.value} (Errore: formato EAN13 non valido)`, 10, yPos);
+                        yPos += 15;
                     }
                 });
             } else if (!currentBarcodeImageUrl) {
                 doc.setFontSize(16);
                 doc.text("Nessun materiale salvato da esportare.", 10, yPos);
             }
-            return doc.output('blob'); // Returns the PDF as a Blob
+            return doc.output('blob');
         }
 
         // Funzione per esportare i codici a barre in PDF (download)
@@ -574,7 +567,7 @@
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            URL.revokeObjectURL(url); // Cleans up the object URL
+            URL.revokeObjectURL(url);
             showToast("PDF generato e pronto per il download!");
         });
 
@@ -593,7 +586,7 @@
                     });
                     showToast('PDF condiviso con successo!');
                 } catch (error) {
-                    console.error('Errore durante la condivisione:', error);
+                        console.error('Errore durante la condivisione:', error);
                     showModal("Impossibile condividere direttamente il PDF. Si prega di scaricare il PDF (Esporta PDF) e condividerlo manualmente tramite WhatsApp.");
                 }
             } else {
