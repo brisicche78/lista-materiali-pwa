@@ -1,6 +1,7 @@
 const CACHE_NAME = 'materiali-cache-v1';
 const urlsToCache = [
   'index.html', // The main HTML file
+  'manifest.json', // Manifest file for PWA
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap',
   'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js',
