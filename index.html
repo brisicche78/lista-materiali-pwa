@@ -96,6 +96,30 @@
             visibility: visible;
             opacity: 1;
         }
+
+        /* Animazione per il feedback di successo su input/display */
+        @keyframes flash-success {
+            0% { border-color: #d1d5db; box-shadow: none; } /* Grigio di default o no shadow */
+            25% { border-color: #4ade80; box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.5); } /* Verde brillante */
+            50% { border-color: #d1d5db; box-shadow: none; }
+            75% { border-color: #4ade80; box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.5); }
+            100% { border-color: #d1d5db; box-shadow: none; }
+        }
+
+        .flash-success {
+            animation: flash-success 1s ease-in-out;
+        }
+
+        /* Animazione per il conteggio */
+        @keyframes count-flash-green {
+            0% { color: inherit; } /* Colore del testo ereditato */
+            50% { color: #22c55e; } /* Tailwind green-500 */
+            100% { color: inherit; }
+        }
+
+        .count-flash-green {
+            animation: count-flash-green 0.8s ease-out;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-gray-900 min-h-screen flex items-center justify-center p-4">
@@ -111,7 +135,7 @@
 
         <div class="mb-6">
             <label for="barcodeInput" class="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-2">
-                Inserisci 12 o 13 cifre per il codice a barre (salvataggio automatico):
+                Inserisci 12 o 13 cifre per il codice a barre:
             </label>
             <input
                 type="number"
@@ -123,7 +147,7 @@
         </div>
 
         <!-- Area di visualizzazione del codice a barre generato -->
-        <div class="flex justify-center items-center h-28 bg-gray-50 dark:bg-gray-700 rounded-lg p-2 mb-6 border border-dashed border-gray-300 dark:border-gray-600">
+        <div id="barcodeDisplayArea" class="flex justify-center items-center h-28 bg-gray-50 dark:bg-gray-700 rounded-lg p-2 mb-6 border border-dashed border-gray-300 dark:border-gray-600">
             <canvas id="barcodeCanvas" class="max-w-full h-auto"></canvas>
             <p id="barcodePlaceholder" class="text-gray-500 dark:text-gray-400 hidden">Il codice a barre apparirà qui</p>
         </div>
@@ -131,39 +155,55 @@
         <!-- Nuovo bottone per Eliminare Ultimo Codice -->
         <button
             id="deleteLastButton"
-            class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 mb-4"
+            class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 mb-4 flex items-center justify-center space-x-2"
         >
-            Elimina Ultimo Materiale
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+            <span>Elimina Ultimo Materiale</span>
         </button>
 
         <!-- Contenitore per i bottoni Esporta PDF, Svuota Lista e Condividi -->
         <div class="flex flex-wrap justify-center gap-4 mb-8">
             <button
                 id="exportPdfButton"
-                class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full shadow-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full shadow-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 flex items-center justify-center space-x-2"
             >
-                Esporta PDF
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                <span>Esporta PDF</span>
             </button>
             <button
                 id="clearListButton"
-                class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-full shadow-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-full shadow-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center justify-center space-x-2"
             >
-                Svuota Lista
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-brush-cleaning-icon lucide-brush-cleaning"><path d="m16 22-1-4"/><path d="M19 13.99a1 1 0 0 0 1-1V12a2 2 0 0 0-2-2h-3a1 1 0 0 1-1-1V4a2 2 0 0 0-4 0v5a1 1 0 0 1-1 1H6a2 2 0 0 0-2 2v.99a1 1 0 0 0 1 1"/><path d="M5 14h14l1.973 6.767A1 1 0 0 1 20 22H4a1 1 0 0 1-.973-1.233z"/><path d="m8 22 1-4"/></svg>
+                <span>Svuota Lista</span>
             </button>
             <button
                 id="sharePdfButton"
-                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-full shadow-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-full shadow-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center space-x-2"
             >
-                Condividi PDF via WhatsApp
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
+                <span>Condividi PDF</span>
             </button>
         </div>
 
         <!-- Lista dei codici a barre "salvati" -->
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 border-b pb-2">Lista Materiali (<span id="savedCount">0</span>)</h2>
-        <!-- Modificato qui: aggiunto 'grid grid-cols-1 md:grid-cols-2 gap-4' -->
-        <div id="savedBarcodesList" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 border-b pb-2 text-center">Materiale Usato (<span id="savedCount">0</span>)</h2>
+        <div id="savedBarcodesList" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar mb-6">
             <!-- I codici a barre salvati verranno inseriti qui dal JS -->
-            <p id="noSavedBarcodes" class="text-gray-500 dark:text-gray-400 text-center col-span-full">Nessun materiale salvato. Inizia a digitarne e salvarne uno!</p>
+        </div>
+
+        <!-- Menu a tendina per la selezione dei codici a barre salvati (Spostato qui sotto) -->
+        <div class="mb-0">
+            <label for="savedBarcodesDropdown" class="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-2">
+                Seleziona un codice a barre salvato per visualizzarlo:
+            </label>
+            <select
+                id="savedBarcodesDropdown"
+                class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                onchange="displaySelectedBarcode()"
+            >
+                <option value="">-- Seleziona un codice --</option>
+            </select>
         </div>
     </div>
 
@@ -209,9 +249,9 @@
         // Inizializza jsPDF dal namespace window
         const { jsPDF } = window.jspdf;
 
-        // Rimosso productNameInput
         const barcodeInput = document.getElementById('barcodeInput');
         const barcodeCanvas = document.getElementById('barcodeCanvas');
+        const barcodeDisplayArea = document.getElementById('barcodeDisplayArea');
         const barcodePlaceholder = document.getElementById('barcodePlaceholder');
         const exportPdfButton = document.getElementById('exportPdfButton');
         const deleteLastButton = document.getElementById('deleteLastButton');
@@ -219,7 +259,7 @@
         const sharePdfButton = document.getElementById('sharePdfButton');
         const savedBarcodesList = document.getElementById('savedBarcodesList');
         const savedCountSpan = document.getElementById('savedCount');
-        const noSavedBarcodesMessage = document.getElementById('noSavedBarcodes');
+        const savedBarcodesDropdown = document.getElementById('savedBarcodesDropdown');
 
         let saveTimeout; // Variabile per il debounce
 
@@ -306,6 +346,9 @@
             if (!trimmedBarcodeValue) {
                 barcodeCanvas.style.display = 'none';
                 barcodePlaceholder.classList.remove('hidden');
+                // Rimuovi l'animazione se l'input è vuoto
+                barcodeInput.classList.remove('flash-success');
+                barcodeDisplayArea.classList.remove('flash-success');
                 clearTimeout(saveTimeout); // Clear any pending save
                 return;
             }
@@ -314,6 +357,9 @@
             if (!/^\d{12,13}$/.test(trimmedBarcodeValue)) { // Checks for 12 or 13 digits
                 barcodeCanvas.style.display = 'none';
                 barcodePlaceholder.classList.remove('hidden');
+                // Rimuovi l'animazione se l'input non è valido
+                barcodeInput.classList.remove('flash-success');
+                barcodeDisplayArea.classList.remove('flash-success');
                 showToast("EAN13 richiede esattamente 12 o 13 cifre numeriche.");
                 return;
             }
@@ -340,12 +386,21 @@
                         const barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
                         
                         barcodes.push({
-                            value: valueToSave, // Reverted to 'value'
+                            value: valueToSave,
                             timestamp: Date.now()
                         });
                         localStorage.setItem('savedBarcodes', JSON.stringify(barcodes));
-                        loadSavedBarcodes();
-                        showToast(`Materiale "${valueToSave}" salvato automaticamente!`); // Only barcode value
+                        loadSavedBarcodes(true); // Passa true per attivare l'animazione del conteggio
+                        showToast(`Materiale "${valueToSave}" salvato automaticamente!`);
+                        
+                        // Aggiungi la classe di animazione e rimuovila dopo il suo ciclo
+                        barcodeInput.classList.add('flash-success');
+                        barcodeDisplayArea.classList.add('flash-success');
+                        setTimeout(() => {
+                            barcodeInput.classList.remove('flash-success');
+                            barcodeDisplayArea.classList.remove('flash-success');
+                        }, 1000); // La durata dell'animazione è 1s
+                        
                         barcodeInput.value = ''; // Pulisci l'input del codice a barre
                         generateAndDisplayBarcode(''); // Pulisci l'immagine generata
                     }
@@ -359,16 +414,33 @@
             }
         }
 
-        // Funzione per caricare e visualizzare i codici a barre salvati
-        function loadSavedBarcodes() {
+        // Funzione per caricare e visualizzare i codici a barre salvati (ora popola anche il dropdown)
+        // Aggiunto un parametro 'animateCount' per controllare l'animazione del conteggio
+        function loadSavedBarcodes(animateCount = false) {
             const barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
-            savedBarcodesList.innerHTML = '';
+            savedBarcodesList.innerHTML = ''; // Pulisce la lista visiva
+            savedBarcodesDropdown.innerHTML = '<option value="">-- Seleziona un codice --</option>'; // Pulisce il dropdown
             savedCountSpan.textContent = barcodes.length;
 
+            // Logica per il colore e l'animazione del conteggio
+            if (barcodes.length > 0) {
+                savedCountSpan.classList.add('text-green-500', 'dark:text-green-400');
+                if (animateCount) {
+                    savedCountSpan.classList.add('count-flash-green');
+                    setTimeout(() => {
+                        savedCountSpan.classList.remove('count-flash-green');
+                    }, 800); // Durata dell'animazione del conteggio
+                }
+            } else {
+                savedCountSpan.classList.remove('text-green-500', 'dark:text-green-400'); // Rimuove il colore verde
+                savedCountSpan.classList.remove('count-flash-green'); // Assicura che l'animazione non rimanga attiva
+            }
+
+
             if (barcodes.length === 0) {
-                noSavedBarcodesMessage.classList.remove('hidden');
-                noSavedBarcodesMessage.classList.add('col-span-full'); // Ensure it spans both columns
-                savedBarcodesList.appendChild(noSavedBarcodesMessage);
+                savedBarcodesDropdown.disabled = true; // Disabilita il dropdown se vuoto
+                savedBarcodesDropdown.classList.add('opacity-50', 'cursor-not-allowed');
+
                 deleteLastButton.disabled = true;
                 deleteLastButton.classList.add('opacity-50', 'cursor-not-allowed');
                 exportPdfButton.disabled = true;
@@ -378,10 +450,19 @@
                 sharePdfButton.disabled = true;
                 sharePdfButton.classList.add('opacity-50', 'cursor-not-allowed');
             } else {
-                noSavedBarcodesMessage.classList.add('hidden');
+                savedBarcodesDropdown.disabled = false; // Abilita il dropdown
+                savedBarcodesDropdown.classList.remove('opacity-50', 'cursor-not-allowed');
+
                 barcodes.forEach(item => {
+                    // Popola il menu a tendina
+                    const option = document.createElement('option');
+                    option.value = item.value;
+                    option.textContent = `${item.value} (${new Date(item.timestamp).toLocaleDateString()})`;
+                    savedBarcodesDropdown.appendChild(option);
+
+                    // Popola la lista a due colonne (come prima)
                     const barcodeItem = document.createElement('div');
-                    barcodeItem.className = 'flex flex-col items-center bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow-sm w-full'; // Ensure it takes full width of grid cell
+                    barcodeItem.className = 'flex flex-col items-center bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow-sm w-full';
                     barcodeItem.innerHTML = `
                         <div class="flex-grow text-center mb-2">
                             <p class="text-gray-800 dark:text-gray-200 font-semibold text-lg break-all">${item.value}</p>
@@ -396,7 +477,7 @@
                         try {
                             JsBarcode(listItemCanvas, item.value, {
                                 format: "EAN13",
-                                displayValue: false, // Don't show text here, it's already in the p tag
+                                displayValue: false,
                                 height: 50,
                                 width: 1.5,
                                 margin: 0
@@ -418,6 +499,18 @@
             }
         }
 
+        // Funzione: Visualizza il codice a barre selezionato dal dropdown
+        function displaySelectedBarcode() {
+            const selectedValue = savedBarcodesDropdown.value;
+            if (selectedValue) {
+                barcodeInput.value = selectedValue; // Inserisci il valore nel campo input
+                generateAndDisplayBarcode(selectedValue); // Genera e mostra il codice a barre principale
+            } else {
+                barcodeInput.value = '';
+                generateAndDisplayBarcode(''); // Pulisci se non è selezionato nulla
+            }
+        }
+
         // Funzione per eliminare l'ultimo codice a barre salvato (con conferma)
         deleteLastButton.addEventListener('click', () => {
             let barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
@@ -430,7 +523,7 @@
                     () => {
                         barcodes.pop();
                         localStorage.setItem('savedBarcodes', JSON.stringify(barcodes));
-                        loadSavedBarcodes();
+                        loadSavedBarcodes(true); // Attiva l'animazione anche dopo l'eliminazione
                         showToast(`Materiale "${displayValue}" eliminato con successo!`);
                     },
                     () => {
@@ -451,7 +544,7 @@
                     true,
                     () => {
                         localStorage.removeItem('savedBarcodes');
-                        loadSavedBarcodes();
+                        loadSavedBarcodes(true); // Attiva l'animazione anche dopo lo svuotamento
                         showToast("Lista materiali svuotata con successo!");
                     },
                     () => {
@@ -513,7 +606,7 @@
 
             if (barcodes.length > 0) {
                 doc.setFontSize(18);
-                doc.text("Lista Materiali:", 10, yPos);
+                doc.text("Materiale Usato:", 10, yPos); /* Changed from Materiali Scansionati */
                 yPos += 10;
 
                 barcodes.forEach((item, index) => {
@@ -523,7 +616,7 @@
                         doc.addPage();
                         yPos = 10;
                         doc.setFontSize(18);
-                        doc.text("Lista Materiali (continua)", 105, yPos, { align: 'center' });
+                        doc.text("Materiale Usato (continua)", 105, yPos, { align: 'center' }); /* Changed from Materiali Scansionati */
                         yPos += 10;
                     }
 
@@ -544,7 +637,7 @@
                         doc.addImage(barcodeImgData, 'PNG', 10, yPos, 80, 25);
                         yPos += 35;
                     } catch (e) {
-                        console.error("Errore nella generazione del codice a barre EAN13 per PDF (elemento lista):", e);
+                        console.error("Errore nella generazione del codice a barre EAN13 per l'elemento lista:", e);
                         doc.setFontSize(14);
                         doc.text(`- ${item.value} (Errore: formato EAN13 non valido)`, 10, yPos);
                         yPos += 15;
@@ -596,7 +689,7 @@
 
         // Carica i codici a barre salvati all'avvio dell'app
         document.addEventListener('DOMContentLoaded', () => {
-            loadSavedBarcodes();
+            loadSavedBarcodes(); // Chiamata iniziale senza animazione
             // Mostra il placeholder iniziale
             barcodeCanvas.style.display = 'none';
             barcodePlaceholder.classList.remove('hidden');
