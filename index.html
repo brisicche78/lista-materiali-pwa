@@ -31,7 +31,7 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
-        /* Stile per la modale */
+        /* Stile per la modale generica */
         .modal {
             display: none; /* Nascosto di default */
             position: fixed; /* Posizione fissa */
@@ -139,6 +139,7 @@
             flex-grow: 1;
             overflow-y: auto;
             padding-right: 10px;
+            margin-top: 15px; /* Spazio sotto la sezione di aggiunta/modifica */
         }
         #allBarcodesModalContent .barcode-item-in-modal {
             display: flex;
@@ -149,16 +150,22 @@
             padding: 10px;
             margin-bottom: 10px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: background-color 0.2s ease;
+            position: relative; /* Per posizionare l'icona di modifica */
+        }
+        #allBarcodesModalContent .barcode-item-in-modal:hover {
+            background-color: #e2e8f0; /* Lighter on hover */
         }
         #allBarcodesModalContent .barcode-item-in-modal p {
             margin-bottom: 5px;
             font-size: 1rem;
             color: #374151;
         }
-        #allBarcodesModalContent .barcode-item-in-modal .timestamp {
+        /* Rimosso lo stile per .timestamp dato che il campo non è più presente */
+        /* .allBarcodesModalContent .barcode-item-in-modal .timestamp {
             font-size: 0.85rem;
             color: #6b7280;
-        }
+        } */
         #allBarcodesModalContent .barcode-item-in-modal canvas {
             max-width: 90%;
             height: auto;
@@ -166,6 +173,21 @@
             background-color: white;
             padding: 5px;
             border-radius: 4px;
+        }
+        .edit-product-icon {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            cursor: pointer;
+            color: #4f46e5; /* Indigo */
+            background-color: #e0e7ff; /* Light indigo background */
+            border-radius: 50%;
+            padding: 6px;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .edit-product-icon:hover {
+            background-color: #c7d2fe; /* Slightly darker indigo */
+            transform: scale(1.1);
         }
         /* Dark mode for the all barcodes modal content */
         .dark #allBarcodesModal .modal-content {
@@ -175,16 +197,36 @@
         .dark #allBarcodesModalContent .barcode-item-in-modal {
             background-color: #374151;
         }
+        .dark #allBarcodesModalContent .barcode-item-in-modal:hover {
+            background-color: #4b5563;
+        }
         .dark #allBarcodesModalContent .barcode-item-in-modal p {
             color: #f9fafb;
         }
-        .dark #allBarcodesModalContent .barcode-item-in-modal .timestamp {
+        /* Rimosso lo stile per .timestamp in dark mode */
+        /* .dark #allBarcodesModalContent .barcode-item-in-modal .timestamp {
             color: #9ca3af;
+        } */
+        .dark .edit-product-icon {
+            color: #a5b4fc; /* Light indigo for dark mode */
+            background-color: #4f46e5; /* Darker indigo background */
+        }
+        .dark .edit-product-icon:hover {
+            background-color: #6366f1; /* Slightly lighter indigo */
         }
         .dark #allBarcodesModalContent .barcode-item-in-modal canvas {
             border-color: #4b5563;
             background-color: #111827;
         }
+
+        /* Stili per la modale "Aggiungi Nome Prodotto" */
+        #addProductNameModal {
+            z-index: 1004; /* Ancora più in alto per essere sopra le altre modali */
+        }
+        #addProductNameModal .modal-content {
+            max-width: 450px;
+        }
+
 
         /* Stili per la nuova modale "Archivio Prodotti" */
         #productArchiveModal {
@@ -333,7 +375,7 @@
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 border-b pb-2 text-center">Materiale Usato (<span id="savedCount">0</span>)</h2>
         <!-- Questo div rimarrà vuoto tranne per il messaggio iniziale se la lista è vuota -->
         <div id="savedBarcodesList" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar mb-6">
-            <p id="noSavedBarcodes" class="text-gray-500 dark:text-gray-400 text-center p-4 hidden">Nessun materiale salvato. Inizia a digitarne e salvarne uno!</p>
+            <p id="noSavedBarcodes" class="text-gray-500 dark:text-gray-400 text-center hidden">Nessun materiale salvato. Inizia a digitarne e salvarne uno!</p>
         </div>
 
         <!-- Nuovo bottone per aprire la modale dei codici acquisiti -->
@@ -370,16 +412,58 @@
         </div>
     </div>
 
-    <!-- Nuova Modale per Mostra Tutti i Codici Acquisiti -->
+    <!-- Modale per Mostra Tutti i Codici Acquisiti -->
     <div id="allBarcodesModal" class="modal">
         <div class="modal-content dark:bg-gray-700">
             <span class="close-button close-all-barcodes-modal dark:text-gray-300">&times;</span>
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 border-b pb-2 text-center">Tutti i Materiali Acquisiti</h2>
+            <!-- La sezione di aggiunta/modifica prodotti è stata spostata in una modale separata per una migliore UX -->
             <div id="allBarcodesModalContent" class="custom-scrollbar">
                 <!-- I codici a barre con le immagini verranno caricati qui -->
             </div>
         </div>
     </div>
+
+    <!-- NUOVA Modale per Aggiungere/Modificare il Nome del Prodotto -->
+    <div id="addProductNameModal" class="modal">
+        <div class="modal-content dark:bg-gray-700">
+            <span class="close-button close-add-product-name-modal dark:text-gray-300">&times;</span>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 border-b pb-2 text-center">Aggiungi Nome Prodotto</h2>
+            
+            <div class="mb-4">
+                <label for="addProductNameModal_barcodeDisplay" class="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-2">
+                    Codice a barre:
+                </label>
+                <p id="addProductNameModal_barcodeDisplay" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-800 dark:text-white mb-3 font-mono text-lg text-center break-all"></p>
+                
+                <label for="addProductNameModal_productNameInput" class="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-2">
+                    Nome Prodotto:
+                </label>
+                <input
+                    type="text"
+                    id="addProductNameModal_productNameInput"
+                    class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white mb-3"
+                    placeholder="Es. Cavo USB-C"
+                />
+                <div class="flex justify-center gap-4 mt-4">
+                    <button
+                        id="addProductNameModal_saveButton"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex items-center justify-center space-x-2"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-save"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10l6 6v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        <span>Salva Prodotto</span>
+                    </button>
+                    <button
+                        id="addProductNameModal_cancelButton"
+                        class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center justify-center space-x-2"
+                    >
+                        <span>Annulla</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Nuova Modale per l'Archivio Prodotti -->
     <div id="productArchiveModal" class="modal">
@@ -461,7 +545,6 @@
         const sharePdfButton = document.getElementById('sharePdfButton');
         const savedBarcodesList = document.getElementById('savedBarcodesList');
         const savedCountSpan = document.getElementById('savedCount');
-        // Rimosso savedBarcodesDropdown
         const showAllBarcodesButton = document.getElementById('showAllBarcodesButton'); 
         const productNameDisplay = document.getElementById('productNameDisplay'); 
         const noSavedBarcodesMessage = document.getElementById('noSavedBarcodes');
@@ -469,7 +552,8 @@
         // Modali
         const modal = document.getElementById('myModal'); // Modale messaggi/conferme
         const allBarcodesModal = document.getElementById('allBarcodesModal'); // Modale tutti i codici
-        const productArchiveModal = document.getElementById('productArchiveModal'); // Nuova Modale Archivio Prodotti
+        const productArchiveModal = document.getElementById('productArchiveModal'); // Modale Archivio Prodotti
+        const addProductNameModal = document.getElementById('addProductNameModal'); // NUOVA Modale Aggiungi Nome Prodotto
 
         // Contenuti delle modali
         const modalMessage = document.getElementById('modalMessage');
@@ -477,23 +561,31 @@
         const productArchiveListContent = document.getElementById('productArchiveListContent'); // Contenuto lista archivio
         const noProductArchiveItems = document.getElementById('noProductArchiveItems'); // Messaggio vuoto archivio
 
-        // Campi e bottoni Archivio Prodotti (spostati nella nuova modale)
-        const manageProductArchiveButton = document.getElementById('manageProductArchiveButton'); // Nuovo pulsante per aprire l'archivio
+        // Campi e bottoni Archivio Prodotti (nella modale dedicata)
+        const manageProductArchiveButton = document.getElementById('manageProductArchiveButton'); 
         const archiveBarcodeInput = document.getElementById('archiveBarcodeInput');
         const archiveProductNameInput = document.getElementById('archiveProductNameInput');
         const saveProductAssociationButton = document.getElementById('saveProductAssociationButton');
+
+        // NUOVI elementi DOM per la modale Aggiungi Nome Prodotto
+        const addProductNameModal_barcodeDisplay = document.getElementById('addProductNameModal_barcodeDisplay');
+        const addProductNameModal_productNameInput = document.getElementById('addProductNameModal_productNameInput');
+        const addProductNameModal_saveButton = document.getElementById('addProductNameModal_saveButton');
+        const addProductNameModal_cancelButton = document.getElementById('addProductNameModal_cancelButton');
 
 
         // Bottoni di chiusura modali
         const closeButton = document.querySelector('.close-button'); // Chiusura modale messaggi/conferme
         const closeAllBarcodesModalButton = document.querySelector('.close-all-barcodes-modal'); // Chiusura modale tutti i codici
-        const closeProductArchiveModalButton = document.querySelector('.close-product-archive-modal'); // Chiusura nuova modale archivio
+        const closeProductArchiveModalButton = document.querySelector('.close-product-archive-modal'); // Chiusura modale archivio
+        const closeAddProductNameModalButton = document.querySelector('.close-add-product-name-modal'); // NUOVA chiusura modale aggiungi nome
 
         // Variabili di stato
         let saveTimeout;
-        let isProgrammaticChange = false; // Mantiene questa variabile per coerenza, anche se l'uso si è ridotto.
+        let isProgrammaticChange = false; 
         let currentOnConfirmCallback = null;
         let currentOnCancelCallback = null;
+        let barcodeToEdit = null; // Memorizza il codice a barre che si sta modificando/aggiungendo il nome
 
         // --- Funzioni Generiche Modali e Toast ---
 
@@ -563,7 +655,7 @@
          * Funzione per salvare/aggiornare un'associazione barcode-nome nell'archivio.
          * @param {string} barcodeValue Il codice a barre.
          * @param {string} productName Il nome del prodotto associato.
-         * @param {boolean} fromModal Indica se la chiamata proviene dalla modale di gestione (per aggiornare la lista)
+         * @param {boolean} fromModal Indica se la chiamata proviene da una modale (per aggiornare le liste)
          */
         function saveProductToArchive(barcodeValue, productName, fromModal = false) {
             if (!barcodeValue || !productName) {
@@ -588,9 +680,15 @@
             localStorage.setItem('productArchive', JSON.stringify(archive));
             
             if (fromModal) {
-                loadProductArchiveList(); // Aggiorna la lista nella modale se la chiamata viene da lì
-                archiveBarcodeInput.value = ''; // Pulisci i campi dopo il salvataggio
-                archiveProductNameInput.value = '';
+                loadProductArchiveList(); // Aggiorna la lista nella modale "Gestisci Archivio Prodotti"
+                if (allBarcodesModal.style.display === 'flex') {
+                    showAllBarcodesInModal(); // Aggiorna anche la modale "Tutti i Materiali Acquisiti" se aperta
+                }
+                // Pulisci i campi solo se la chiamata non proviene da addProductNameModal (che ha la sua logica)
+                if (fromModal !== 'addProductNameModal') {
+                    archiveBarcodeInput.value = ''; 
+                    archiveProductNameInput.value = '';
+                }
             }
         }
 
@@ -606,7 +704,10 @@
             if (archive.length < initialLength) {
                 localStorage.setItem('productArchive', JSON.stringify(archive));
                 showToast(`Associazione per il codice ${barcodeValueToDelete} eliminata dall'archivio!`);
-                loadProductArchiveList(); // Aggiorna la lista nella modale
+                loadProductArchiveList(); // Aggiorna la lista nella modale "Gestisci Archivio Prodotti"
+                if (allBarcodesModal.style.display === 'flex') {
+                    showAllBarcodesInModal(); // Aggiorna anche la modale "Tutti i Materiali Acquisiti" se aperta
+                }
             } else {
                 showModal(`L'associazione per il codice ${barcodeValueToDelete} non è stata trovata nell'archivio.`);
             }
@@ -623,8 +724,10 @@
 
             if (foundItem) {
                 productNameDisplay.textContent = foundItem.name;
+                return true; // Prodotto trovato
             } else {
                 productNameDisplay.textContent = "Nessun prodotto trovato";
+                return false; // Prodotto non trovato
             }
         }
 
@@ -705,7 +808,13 @@
                 return;
             }
 
-            lookupProductName(trimmedBarcodeValue); // Ricerca il nome prodotto qui
+            const productFound = lookupProductName(trimmedBarcodeValue); // Ricerca il nome prodotto qui
+
+            // Se il prodotto non è stato trovato nell'archivio, mostra la toast notification
+            if (!productFound) {
+                showToast("Nuovo prodotto rilevato! Nessun nome associato nell'archivio.");
+            }
+
 
             if (!isProgrammaticChange) {
                 saveTimeout = setTimeout(() => {
@@ -736,7 +845,6 @@
         function loadSavedBarcodes(animateCount = false) {
             const barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
             savedBarcodesList.innerHTML = ''; // Pulisce la lista visualizzata
-            // Rimosso l'aggiornamento di savedBarcodesDropdown
             savedCountSpan.textContent = barcodes.length;
 
             if (barcodes.length > 0) {
@@ -759,7 +867,6 @@
 
 
             if (barcodes.length === 0) {
-                // Rimosso savedBarcodesDropdown.disabled = true; e relative classi
                 deleteLastButton.disabled = true;
                 deleteLastButton.classList.add('opacity-50', 'cursor-not-allowed');
                 exportPdfButton.disabled = true;
@@ -773,8 +880,6 @@
                 manageProductArchiveButton.disabled = true; 
                 manageProductArchiveButton.classList.add('opacity-50', 'cursor-not-allowed');
             } else {
-                // Rimosso savedBarcodesDropdown.disabled = false; e relative classi
-                // Rimosso il loop barcodes.forEach che aggiungeva option al dropdown
                 deleteLastButton.disabled = false;
                 deleteLastButton.classList.remove('opacity-50', 'cursor-not-allowed');
                 exportPdfButton.disabled = false;
@@ -789,9 +894,6 @@
                 manageProductArchiveButton.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         }
-
-        // Rimosso displaySelectedBarcode()
-        // function displaySelectedBarcode() { ... }
 
         deleteLastButton.addEventListener('click', () => {
             let barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
@@ -836,6 +938,27 @@
             }
         });
 
+        /**
+         * Opens the modal to add/edit the product name for a specific barcode.
+         * @param {string} barcode The barcode to edit/add.
+         */
+        function openAddProductNameModal(barcode) {
+            barcodeToEdit = barcode; // Saves the global barcode
+            addProductNameModal_barcodeDisplay.textContent = barcode;
+            addProductNameModal_productNameInput.value = ''; // Clears the name field
+            addProductNameModal.style.display = 'flex';
+            addProductNameModal_productNameInput.focus(); // Focus on the input
+        }
+
+        /**
+         * Closes the modal to add/edit the product name.
+         */
+        function closeAddProductNameModal() {
+            addProductNameModal.style.display = 'none';
+            barcodeToEdit = null; // Resets the barcode being edited
+            addProductNameModal_productNameInput.value = ''; // Clears the input field
+        }
+
         function showAllBarcodesInModal() {
             const barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
             allBarcodesModalContent.innerHTML = '';
@@ -850,6 +973,8 @@
                 barcodes.forEach(item => {
                     const barcodeItemDiv = document.createElement('div');
                     barcodeItemDiv.className = 'barcode-item-in-modal';
+                    // No longer need data-barcodeValue for item click, but leaving for reference
+                    // barcodeItemDiv.dataset.barcodeValue = item.value; 
 
                     const barcodeValueP = document.createElement('p');
                     barcodeValueP.className = 'font-semibold text-lg';
@@ -862,12 +987,28 @@
                         productNameP.className = 'font-medium text-blue-600 dark:text-blue-300';
                         productNameP.textContent = productInArchive.name;
                         barcodeItemDiv.appendChild(productNameP);
-                    }
+                    } else {
+                        // If no name, add a placeholder or message
+                        const productNameP = document.createElement('p');
+                        productNameP.className = 'font-medium text-gray-500 dark:text-gray-400 text-sm italic';
+                        productNameP.textContent = '(Nessun nome associato)';
+                        barcodeItemDiv.appendChild(productNameP);
 
-                    const timestampP = document.createElement('p');
-                    timestampP.className = 'timestamp text-sm';
-                    timestampP.textContent = new Date(item.timestamp).toLocaleString();
-                    barcodeItemDiv.appendChild(timestampP);
+                        // Add the icon to edit/add the name
+                        const editIcon = document.createElement('button');
+                        editIcon.className = 'edit-product-icon';
+                        editIcon.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="M15 5l4 4"/></svg>
+                        `;
+                        editIcon.title = "Aggiungi/Modifica nome prodotto";
+                        editIcon.addEventListener('click', (e) => {
+                            e.stopPropagation(); // Prevents the click from propagating to the parent element
+                            openAddProductNameModal(item.value);
+                        });
+                        barcodeItemDiv.appendChild(editIcon);
+                    }
+                    
+                    // Removed timestamp display
 
                     const barcodeCanvasModal = document.createElement('canvas');
                     barcodeCanvasModal.className = 'w-full h-auto mt-2';
@@ -875,19 +1016,19 @@
 
                     allBarcodesModalContent.appendChild(barcodeItemDiv);
 
-                    // Genera il codice a barre per la modale "Tutti i Materiali Acquisiti"
+                    // Generate the barcode for the "All Acquired Materials" modal
                     if (typeof JsBarcode !== 'undefined') {
                         try {
                             JsBarcode(barcodeCanvasModal, item.value, {
                                 format: "EAN13",
-                                displayValue: false, // Potresti volerlo su true qui se desideri il valore sotto il barcode nella modale
+                                displayValue: false, 
                                 height: 60,
                                 width: 2,
                                 margin: 0,
                                 lineColor: "#333"
                             });
                         } catch (e) {
-                            console.error("Errore nella generazione del codice a barre per la modale:", e);
+                            console.error("Error generating barcode for modal:", e);
                             const errorText = document.createElement('p');
                             errorText.className = 'text-red-500 text-xs';
                             errorText.textContent = 'Errore codice';
@@ -988,7 +1129,7 @@
                         const barcodeImgData = tempCanvas.toDataURL("image/png");
 
                         doc.setFontSize(14);
-                        doc.text(`${item.value} (${new Date(item.timestamp).toLocaleString()})`, 10, yPos);
+                        doc.text(`${item.value}`, 10, yPos); // Rimosso il timestamp qui
                         yPos += 5;
 
                         const productInArchive = productArchive.find(p => p.barcode === item.value);
@@ -1058,26 +1199,42 @@
         modalCancelBtn.onclick = () => { if (currentOnCancelCallback) currentOnCancelCallback(); closeModal(); };
 
         closeAllBarcodesModalButton.onclick = closeAllBarcodesModal; // Modale tutti i codici
-        closeProductArchiveModalButton.onclick = closeProductArchiveModal; // Nuova modale archivio
+        closeProductArchiveModalButton.onclick = closeProductArchiveModal; // Modale archivio
+        closeAddProductNameModalButton.onclick = closeAddProductNameModal; // NUOVA Modale aggiungi nome
 
         // Clic fuori dalle modali per chiuderle
         window.onclick = function(event) {
             if (event.target == modal) closeModal();
             if (event.target == allBarcodesModal) closeAllBarcodesModal();
-            if (event.target == productArchiveModal) closeProductArchiveModal(); // Nuova modale
+            if (event.target == productArchiveModal) closeProductArchiveModal(); 
+            if (event.target == addProductNameModal) closeAddProductNameModal(); // NUOVA modale
         }
 
         // Listener per il pulsante Salva/Aggiorna Associazione nella modale Archivio Prodotti
         saveProductAssociationButton.addEventListener('click', () => {
             const currentBarcode = archiveBarcodeInput.value.trim();
             const currentProductName = archiveProductNameInput.value.trim();
-            saveProductToArchive(currentBarcode, currentProductName, true); // Passa true per indicare che viene dalla modale
+            saveProductToArchive(currentBarcode, currentProductName, 'productArchiveModal'); // Indica che viene da questa modale
         });
 
         // Listener per il campo input della modale Archivio Prodotti per la ricerca live
         archiveBarcodeInput.addEventListener('input', (event) => {
             lookupProductNameInArchiveModal(event.target.value);
         });
+
+        // NUOVI LISTENER per la modale Aggiungi Nome Prodotto
+        addProductNameModal_saveButton.addEventListener('click', () => {
+            const productName = addProductNameModal_productNameInput.value.trim();
+            if (barcodeToEdit && productName) {
+                saveProductToArchive(barcodeToEdit, productName, 'addProductNameModal'); // Indica che viene da questa modale
+                closeAddProductNameModal();
+            } else {
+                showModal("Per favore, inserisci un nome prodotto.");
+            }
+        });
+
+        addProductNameModal_cancelButton.addEventListener('click', closeAddProductNameModal);
+
 
         // Carica i codici a barre salvati all'avvio dell'app
         document.addEventListener('DOMContentLoaded', () => {
