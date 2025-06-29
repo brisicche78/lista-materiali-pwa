@@ -35,7 +35,7 @@
         .modal {
             display: none; /* Nascosto di default */
             position: fixed; /* Posizione fissa */
-            z-index: 1000; /* Davanti a tutto */
+            z-index: 1000; /* Valore base per le modali, ma verrà sovrascritto selettivamente */
             left: 0;
             top: 0;
             width: 100%; /* Larghezza intera */
@@ -44,6 +44,10 @@
             background-color: rgba(0,0,0,0.4); /* Sfondo semi-trasparente */
             justify-content: center;
             align-items: center;
+        }
+        /* Assicurati che la modale dei messaggi/conferme sia sempre in cima */
+        #myModal {
+            z-index: 1003; /* Maggiore di tutte le altre modali */
         }
         .modal-content {
             background-color: #fefefe;
@@ -82,7 +86,7 @@
             border-radius: 8px;
             padding: 16px;
             position: fixed;
-            z-index: 1001;
+            z-index: 1001; /* Appare sopra la modale principale ma sotto quelle più importanti */
             left: 50%;
             transform: translateX(-50%);
             bottom: 30px; /* Posizionata in basso */
@@ -97,7 +101,7 @@
             opacity: 1;
         }
 
-        /* Animazione per il feedback di successo su input/display */
+        /* Animazione per il feedback di successo su input */
         @keyframes flash-success {
             0% { border-color: #d1d5db; box-shadow: none; } /* Grigio di default o no shadow */
             25% { border-color: #4ade80; box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.5); } /* Verde brillante */
@@ -122,6 +126,9 @@
         }
 
         /* Stili per la modale "Tutti i Materiali Acquisiti" */
+        #allBarcodesModal {
+            z-index: 1002; /* Impostato per apparire sopra il contenuto principale e allo stesso livello dell'archivio prodotti */
+        }
         #allBarcodesModal .modal-content {
             max-width: 600px;
             height: 90%;
@@ -181,7 +188,7 @@
 
         /* Stili per la nuova modale "Archivio Prodotti" */
         #productArchiveModal {
-            z-index: 1002; /* Più alto delle altre modali se necessario */
+            z-index: 1002; /* Più alto della modale base ma sotto quella di conferma */
         }
         #productArchiveModal .modal-content {
             max-width: 700px; /* Ancora più largo */
@@ -210,28 +217,29 @@
         #productArchiveModalContent .product-item-in-archive:hover {
             background-color: #e2e8f0; /* Lighter on hover */
         }
-        #productArchiveModalContent .product-item-in-archive .barcode-value {
+        #productArchiveModalContent .product-item-in-archive .barcode-value-display {
             font-weight: 600;
             color: #334155; /* Darker text */
             font-size: 1.1rem;
-            flex-basis: 40%;
             word-break: break-all;
         }
-        #productArchiveModalContent .product-item-in-archive .product-name {
+        #productArchiveModalContent .product-item-in-archive .product-name-display {
             font-weight: 500;
             color: #1e40af; /* Blue text */
             font-size: 1.1rem;
-            flex-basis: 40%;
             word-break: break-all;
         }
         #productArchiveModalContent .product-item-in-archive .delete-button {
             background-color: #ef4444; /* Red */
             color: white;
             border-radius: 9999px; /* Full rounded */
-            padding: 6px 10px;
+            padding: 8px; /* Aumentato il padding per l'icona */
             font-size: 0.8rem;
             margin-left: 10px;
             transition: background-color 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         #productArchiveModalContent .product-item-in-archive .delete-button:hover {
             background-color: #dc2626; /* Darker red */
@@ -248,10 +256,10 @@
         .dark #productArchiveModalContent .product-item-in-archive:hover {
             background-color: #4b5563;
         }
-        .dark #productArchiveModalContent .product-item-in-archive .barcode-value {
+        .dark #productArchiveModalContent .product-item-in-archive .barcode-value-display {
             color: #f9fafb;
         }
-        .dark #productArchiveModalContent .product-item-in-archive .product-name {
+        .dark #productArchiveModalContent .product-item-in-archive .product-name-display {
             color: #93c5fd; /* Light blue */
         }
     </style>
@@ -276,14 +284,8 @@
                 id="barcodeInput"
                 class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Es. 123456789012"
-                oninput="generateAndDisplayBarcode(this.value)"
+                oninput="handleBarcodeInput(this.value)"
             />
-        </div>
-
-        <!-- Area di visualizzazione del codice a barre generato -->
-        <div id="barcodeDisplayArea" class="flex justify-center items-center h-28 bg-gray-50 dark:bg-gray-700 rounded-lg p-2 mb-6 border border-dashed border-gray-300 dark:border-gray-600">
-            <canvas id="barcodeCanvas" class="max-w-full h-auto"></canvas>
-            <p id="barcodePlaceholder" class="text-gray-500 dark:text-gray-400 hidden">Il codice a barre apparirà qui</p>
         </div>
 
         <!-- Display per Nome Prodotto Trovato (sulla schermata principale) -->
@@ -327,16 +329,17 @@
             </button>
         </div>
 
-        <!-- Lista dei codici a barre "salvati" -->
+        <!-- Lista dei codici a barre "salvati" (ora solo il titolo e il conteggio) -->
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 border-b pb-2 text-center">Materiale Usato (<span id="savedCount">0</span>)</h2>
+        <!-- Questo div rimarrà vuoto tranne per il messaggio iniziale se la lista è vuota -->
         <div id="savedBarcodesList" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar mb-6">
-            <!-- I codici a barre salvati verranno inseriti qui dal JS -->
+            <p id="noSavedBarcodes" class="text-gray-500 dark:text-gray-400 text-center p-4 hidden">Nessun materiale salvato. Inizia a digitarne e salvarne uno!</p>
         </div>
 
         <!-- Nuovo bottone per aprire la modale dei codici acquisiti -->
         <button
             id="showAllBarcodesButton"
-            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 mb-4 flex items-center justify-center space-x-2"
+            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 mb-4 flex items-center justify-center space-x-2 hidden"
         >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-gallery-vertical"><path d="M3 2h18v18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M7 8h10"/><path d="M7 12h10"/><path d="M7 16h10"/></svg>
             <span>Mostra Tutti i Codici</span>
@@ -351,19 +354,7 @@
             <span>Gestisci Archivio Prodotti</span>
         </button>
 
-        <!-- Menu a tendina per la selezione dei codici a barre salvati (Spostato qui sotto) -->
-        <div class="mb-0">
-            <label for="savedBarcodesDropdown" class="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-2">
-                Seleziona un codice a barre salvato per visualizzarlo:
-            </label>
-            <select
-                id="savedBarcodesDropdown"
-                class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
-                onchange="displaySelectedBarcode()"
-            >
-                <option value="">-- Seleziona un codice --</option>
-            </select>
-        </div>
+        <!-- Rimosso completamente il menu a tendina e la sua label -->
     </div>
 
     <!-- Modale per messaggi e conferme (esistente) -->
@@ -464,18 +455,16 @@
 
         // Elementi DOM Principali
         const barcodeInput = document.getElementById('barcodeInput');
-        const barcodeCanvas = document.getElementById('barcodeCanvas');
-        const barcodeDisplayArea = document.getElementById('barcodeDisplayArea');
-        const barcodePlaceholder = document.getElementById('barcodePlaceholder');
         const exportPdfButton = document.getElementById('exportPdfButton');
         const deleteLastButton = document.getElementById('deleteLastButton');
         const clearListButton = document.getElementById('clearListButton');
         const sharePdfButton = document.getElementById('sharePdfButton');
         const savedBarcodesList = document.getElementById('savedBarcodesList');
         const savedCountSpan = document.getElementById('savedCount');
-        const savedBarcodesDropdown = document.getElementById('savedBarcodesDropdown');
-        const showAllBarcodesButton = document.getElementById('showAllBarcodesButton');
-        const productNameDisplay = document.getElementById('productNameDisplay'); // Display del nome prodotto sulla schermata principale
+        // Rimosso savedBarcodesDropdown
+        const showAllBarcodesButton = document.getElementById('showAllBarcodesButton'); 
+        const productNameDisplay = document.getElementById('productNameDisplay'); 
+        const noSavedBarcodesMessage = document.getElementById('noSavedBarcodes');
 
         // Modali
         const modal = document.getElementById('myModal'); // Modale messaggi/conferme
@@ -502,7 +491,7 @@
 
         // Variabili di stato
         let saveTimeout;
-        let isProgrammaticChange = false;
+        let isProgrammaticChange = false; // Mantiene questa variabile per coerenza, anche se l'uso si è ridotto.
         let currentOnConfirmCallback = null;
         let currentOnCancelCallback = null;
 
@@ -522,7 +511,7 @@
                 modalConfirmBtn.classList.add('hidden');
                 modalCancelBtn.classList.add('hidden');
                 currentOnConfirmCallback = null;
-                currentOnCancelCallback = null;
+                currentOnConfirmCallback = null;
             }
         }
 
@@ -676,9 +665,13 @@
                     const productItemDiv = document.createElement('div');
                     productItemDiv.className = 'product-item-in-archive';
                     productItemDiv.innerHTML = `
-                        <span class="barcode-value">Codice: ${item.barcode}</span>
-                        <span class="product-name">Nome: ${item.name}</span>
-                        <button class="delete-button">Elimina</button>
+                        <div class="flex-grow flex flex-col mr-4">
+                            <p class="barcode-value-display">Codice: ${item.barcode}</p>
+                            <p class="product-name-display">Nome: ${item.name}</p>
+                        </div>
+                        <button class="delete-button">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                        </button>
                     `;
                     // Aggiungi listener per il pulsante elimina
                     productItemDiv.querySelector('.delete-button').addEventListener('click', () => {
@@ -694,84 +687,56 @@
 
         // --- Funzioni Core App ---
 
-        function generateAndDisplayBarcode(value) {
-            clearTimeout(saveTimeout);
+        function handleBarcodeInput(value) {
+            clearTimeout(saveTimeout); // Resetta il timer ad ogni nuova digitazione
 
             const trimmedBarcodeValue = value.trim();
 
             if (!trimmedBarcodeValue) {
-                barcodeCanvas.style.display = 'none';
-                barcodePlaceholder.classList.remove('hidden');
                 lookupProductName(''); // Pulisci display nome prodotto
-                clearTimeout(saveTimeout);
+                clearTimeout(saveTimeout); // Clear any pending save
                 return;
             }
 
-            if (!/^\d{12,13}$/.test(trimmedBarcodeValue)) {
-                barcodeCanvas.style.display = 'none';
-                barcodePlaceholder.classList.remove('hidden');
+            // Validation for EAN13
+            if (!/^\d{12,13}$/.test(trimmedBarcodeValue)) { // Checks for 12 or 13 digits
                 lookupProductName(''); // Pulisci display nome prodotto
                 showToast("EAN13 richiede esattamente 12 o 13 cifre numeriche.");
                 return;
             }
 
-            try {
-                JsBarcode(barcodeCanvas, trimmedBarcodeValue, {
-                    format: "EAN13",
-                    displayValue: true,
-                    height: 80,
-                    width: 2,
-                    margin: 10,
-                    lineColor: "#333",
-                    font: "Inter",
-                    fontSize: 16
-                });
-                barcodeCanvas.style.display = 'block';
-                barcodePlaceholder.classList.add('hidden');
+            lookupProductName(trimmedBarcodeValue); // Ricerca il nome prodotto qui
 
-                lookupProductName(trimmedBarcodeValue); // Ricerca il nome prodotto qui
-
-                if (!isProgrammaticChange) {
-                    saveTimeout = setTimeout(() => {
-                        const valueToSave = trimmedBarcodeValue;
+            if (!isProgrammaticChange) {
+                saveTimeout = setTimeout(() => {
+                    const valueToSave = trimmedBarcodeValue;
+                    
+                    if (valueToSave) {
+                        const barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
                         
-                        if (valueToSave) {
-                            const barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
-                            
-                            barcodes.push({
-                                value: valueToSave,
-                                timestamp: Date.now()
-                            });
-                            localStorage.setItem('savedBarcodes', JSON.stringify(barcodes));
-                            loadSavedBarcodes(true);
-                            showToast(`Materiale "${valueToSave}" salvato automaticamente!`);
-                            
-                            barcodeInput.classList.add('flash-success');
-                            barcodeDisplayArea.classList.add('flash-success');
-                            setTimeout(() => {
-                                barcodeInput.classList.remove('flash-success');
-                                barcodeDisplayArea.classList.remove('flash-success');
-                            }, 1000);
-                            
-                            barcodeInput.value = '';
-                            generateAndDisplayBarcode('');
-                        }
-                    }, 700);
-                }
-
-            } catch (e) {
-                console.error("Errore nella generazione del codice a barre EAN13:", e);
-                barcodeCanvas.style.display = 'none';
-                barcodePlaceholder.classList.remove('hidden');
-                lookupProductName('');
-                showModal("Errore durante la generazione del codice a barre EAN13. Controlla che le cifre siano numeriche e valide.");
+                        barcodes.push({
+                            value: valueToSave,
+                            timestamp: Date.now()
+                        });
+                        localStorage.setItem('savedBarcodes', JSON.stringify(barcodes));
+                        loadSavedBarcodes(true); // Aggiorna solo il conteggio e lo stato dei bottoni
+                        showToast(`Materiale "${valueToSave}" salvato automaticamente!`);
+                        
+                        barcodeInput.classList.add('flash-success');
+                        setTimeout(() => {
+                            barcodeInput.classList.remove('flash-success');
+                        }, 1000);
+                        
+                        barcodeInput.value = ''; // Pulisci l'input dopo il salvataggio
+                    }
+                }, 700);
             }
         }
 
         function loadSavedBarcodes(animateCount = false) {
             const barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
-            savedBarcodesList.innerHTML = '';
-            savedBarcodesDropdown.innerHTML = '<option value="">-- Seleziona un codice --</option>';
+            savedBarcodesList.innerHTML = ''; // Pulisce la lista visualizzata
+            // Rimosso l'aggiornamento di savedBarcodesDropdown
             savedCountSpan.textContent = barcodes.length;
 
             if (barcodes.length > 0) {
@@ -782,16 +747,19 @@
                         savedCountSpan.classList.remove('count-flash-green');
                     }, 800);
                 }
+                showAllBarcodesButton.classList.remove('hidden'); // Mostra il pulsante se ci sono codici
+                noSavedBarcodesMessage.classList.add('hidden'); // Nascondi il messaggio "Nessun materiale salvato"
             } else {
                 savedCountSpan.classList.remove('text-green-500', 'dark:text-green-400');
                 savedCountSpan.classList.remove('count-flash-green');
+                showAllBarcodesButton.classList.add('hidden'); // Nascondi il pulsante se non ci sono codici
+                noSavedBarcodesMessage.classList.remove('hidden'); // Mostra il messaggio "Nessun materiale salvato"
+                savedBarcodesList.appendChild(noSavedBarcodesMessage); // Aggiungi il messaggio alla lista
             }
 
 
             if (barcodes.length === 0) {
-                savedBarcodesDropdown.disabled = true;
-                savedBarcodesDropdown.classList.add('opacity-50', 'cursor-not-allowed');
-
+                // Rimosso savedBarcodesDropdown.disabled = true; e relative classi
                 deleteLastButton.disabled = true;
                 deleteLastButton.classList.add('opacity-50', 'cursor-not-allowed');
                 exportPdfButton.disabled = true;
@@ -800,51 +768,13 @@
                 clearListButton.classList.add('opacity-50', 'cursor-not-allowed');
                 sharePdfButton.disabled = true;
                 sharePdfButton.classList.add('opacity-50', 'cursor-not-allowed');
-                showAllBarcodesButton.disabled = true; // Disable "Mostra Tutti i Codici"
+                showAllBarcodesButton.disabled = true; 
                 showAllBarcodesButton.classList.add('opacity-50', 'cursor-not-allowed');
-                manageProductArchiveButton.disabled = true; // Disable "Gestisci Archivio Prodotti"
+                manageProductArchiveButton.disabled = true; 
                 manageProductArchiveButton.classList.add('opacity-50', 'cursor-not-allowed');
             } else {
-                savedBarcodesDropdown.disabled = false;
-                savedBarcodesDropdown.classList.remove('opacity-50', 'cursor-not-allowed');
-
-                barcodes.forEach(item => {
-                    const option = document.createElement('option');
-                    option.value = item.value;
-                    const productArchive = getProductArchive();
-                    const productInArchive = productArchive.find(p => p.barcode === item.value);
-                    const displayName = productInArchive ? `${item.value} - ${productInArchive.name}` : item.value;
-
-                    option.textContent = `${displayName} (${new Date(item.timestamp).toLocaleDateString()})`;
-                    savedBarcodesDropdown.appendChild(option);
-
-                    const barcodeItem = document.createElement('div');
-                    barcodeItem.className = 'flex flex-col items-center bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow-sm w-full';
-                    barcodeItem.innerHTML = `
-                        <div class="flex-grow text-center mb-2">
-                            <p class="text-gray-800 dark:text-gray-200 font-semibold text-lg break-all">${item.value}</p>
-                            ${productInArchive ? `<p class="text-blue-600 dark:text-blue-300 font-medium text-base">${productInArchive.name}</p>` : ''}
-                            <p class="text-gray-500 dark:text-gray-400 text-sm">${new Date(item.timestamp).toLocaleString()}</p>
-                        </div>
-                        <canvas class="w-full h-auto barcode-list-item"></canvas>
-                    `;
-                    savedBarcodesList.appendChild(barcodeItem);
-
-                    const listItemCanvas = barcodeItem.querySelector('.barcode-list-item');
-                    if (listItemCanvas && typeof JsBarcode !== 'undefined') {
-                        try {
-                            JsBarcode(listItemCanvas, item.value, {
-                                format: "EAN13",
-                                displayValue: false,
-                                height: 50,
-                                width: 1.5,
-                                margin: 0
-                            });
-                        } catch (e) {
-                            console.error("Errore nella generazione del codice a barre EAN13 per l'elemento lista:", e);
-                        }
-                    }
-                });
+                // Rimosso savedBarcodesDropdown.disabled = false; e relative classi
+                // Rimosso il loop barcodes.forEach che aggiungeva option al dropdown
                 deleteLastButton.disabled = false;
                 deleteLastButton.classList.remove('opacity-50', 'cursor-not-allowed');
                 exportPdfButton.disabled = false;
@@ -853,25 +783,15 @@
                 clearListButton.classList.remove('opacity-50', 'cursor-not-allowed');
                 sharePdfButton.disabled = false;
                 sharePdfButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                showAllBarcodesButton.disabled = false; // Enable "Mostra Tutti i Codici"
+                showAllBarcodesButton.disabled = false; 
                 showAllBarcodesButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                manageProductArchiveButton.disabled = false; // Enable "Gestisci Archivio Prodotti"
+                manageProductArchiveButton.disabled = false; 
                 manageProductArchiveButton.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         }
 
-        function displaySelectedBarcode() {
-            const selectedValue = savedBarcodesDropdown.value;
-            if (selectedValue) {
-                isProgrammaticChange = true;
-                barcodeInput.value = selectedValue;
-                generateAndDisplayBarcode(selectedValue);
-                isProgrammaticChange = false;
-            } else {
-                barcodeInput.value = '';
-                generateAndDisplayBarcode('');
-            }
-        }
+        // Rimosso displaySelectedBarcode()
+        // function displaySelectedBarcode() { ... }
 
         deleteLastButton.addEventListener('click', () => {
             let barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
@@ -955,11 +875,12 @@
 
                     allBarcodesModalContent.appendChild(barcodeItemDiv);
 
+                    // Genera il codice a barre per la modale "Tutti i Materiali Acquisiti"
                     if (typeof JsBarcode !== 'undefined') {
                         try {
                             JsBarcode(barcodeCanvasModal, item.value, {
                                 format: "EAN13",
-                                displayValue: false,
+                                displayValue: false, // Potresti volerlo su true qui se desideri il valore sotto il barcode nella modale
                                 height: 60,
                                 width: 2,
                                 margin: 0,
@@ -996,8 +917,11 @@
             const currentBarcodeValue = barcodeInput.value.trim();
             let currentBarcodeImageUrl = null;
 
+            // Genera l'immagine del codice a barre attuale solo se l'input è valido EAN13
+            // Questa sezione crea un canvas temporaneo solo per la generazione PDF
             if (currentBarcodeValue && /^\d{12,13}$/.test(currentBarcodeValue)) {
                 try {
+                    // Crea un canvas temporaneo in memoria, non lo visualizza in pagina
                     const tempCanvasForCurrent = document.createElement('canvas');
                     JsBarcode(tempCanvasForCurrent, currentBarcodeValue, {
                         format: "EAN13",
@@ -1014,6 +938,7 @@
                     console.error("Errore nella generazione del codice a barre EAN13 attuale per PDF:", e);
                 }
             }
+
 
             if (currentBarcodeImageUrl && currentBarcodeValue) {
                 doc.setFontSize(16);
@@ -1157,13 +1082,13 @@
         // Carica i codici a barre salvati all'avvio dell'app
         document.addEventListener('DOMContentLoaded', () => {
             loadSavedBarcodes();
-            barcodeCanvas.style.display = 'none';
-            barcodePlaceholder.classList.remove('hidden');
             lookupProductName(''); // Inizializza il display del nome prodotto come "Nessun prodotto trovato"
             manageProductArchiveButton.disabled = false; // Assicura che il pulsante sia attivo all'avvio
             manageProductArchiveButton.classList.remove('opacity-50', 'cursor-not-allowed');
         });
 
+        // Listener per il nuovo pulsante "Mostra Tutti i Codici"
+        showAllBarcodesButton.addEventListener('click', showAllBarcodesInModal);
         // Listener per il nuovo pulsante "Gestisci Archivio Prodotti"
         manageProductArchiveButton.addEventListener('click', openProductArchiveModal);
     </script>
