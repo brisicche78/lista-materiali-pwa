@@ -161,11 +161,6 @@
             font-size: 1rem;
             color: #374151;
         }
-        /* Rimosso lo stile per .timestamp dato che il campo non è più presente */
-        /* .allBarcodesModalContent .barcode-item-in-modal .timestamp {
-            font-size: 0.85rem;
-            color: #6b7280;
-        } */
         #allBarcodesModalContent .barcode-item-in-modal canvas {
             max-width: 90%;
             height: auto;
@@ -203,10 +198,6 @@
         .dark #allBarcodesModalContent .barcode-item-in-modal p {
             color: #f9fafb;
         }
-        /* Rimosso lo stile per .timestamp in dark mode */
-        /* .dark #allBarcodesModalContent .barcode-item-in-modal .timestamp {
-            color: #9ca3af;
-        } */
         .dark .edit-product-icon {
             color: #a5b4fc; /* Light indigo for dark mode */
             background-color: #4f46e5; /* Darker indigo background */
@@ -304,6 +295,55 @@
         .dark #productArchiveModalContent .product-item-in-archive .product-name-display {
             color: #93c5fd; /* Light blue */
         }
+
+        /* Stili per la nuova modale "Riepilogo Quantità Prodotti" */
+        #productSummaryModal {
+            z-index: 1002; /* Stesso livello dell'archivio e tutti i codici */
+        }
+        #productSummaryModal .modal-content {
+            max-width: 600px;
+            height: 90%;
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+            padding: 25px;
+        }
+        #productSummaryModalContent {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-top: 15px;
+            padding-right: 10px;
+        }
+        #productSummaryModalContent .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 1.1rem;
+            color: #374151; /* Default color for light mode */
+        }
+        #productSummaryModalContent .summary-item:last-child {
+            border-bottom: none;
+        }
+        #productSummaryModalContent .summary-item .product-name {
+            font-weight: 600;
+        }
+        #productSummaryModalContent .summary-item .product-quantity {
+            font-weight: 700;
+            color: #1d4ed8; /* Blue-700 in light mode */
+        }
+        /* Dark mode for product summary modal */
+        .dark #productSummaryModal .modal-content {
+            background-color: #1f2937;
+            color: #f9fafb; /* White for the modal content text */
+        }
+        .dark #productSummaryModalContent .summary-item {
+            border-bottom-color: #4b5563;
+            color: #f9fafb; /* Changed to white */
+        }
+        .dark #productSummaryModalContent .summary-item .product-quantity {
+            color: #f9fafb; /* Changed to white */
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-gray-900 min-h-screen flex items-center justify-center p-4">
@@ -396,7 +436,15 @@
             <span>Gestisci Archivio Prodotti</span>
         </button>
 
-        <!-- Rimosso completamente il menu a tendina e la sua label -->
+        <!-- Nuovo bottone per aprire il riepilogo delle quantità -->
+        <button
+            id="showProductSummaryButton"
+            class="w-full bg-lime-600 hover:bg-lime-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 mb-4 flex items-center justify-center space-x-2"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clipboard-list"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+            <span>Riepilogo Quantità Prodotti</span>
+        </button>
+
     </div>
 
     <!-- Modale per messaggi e conferme (esistente) -->
@@ -417,14 +465,13 @@
         <div class="modal-content dark:bg-gray-700">
             <span class="close-button close-all-barcodes-modal dark:text-gray-300">&times;</span>
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 border-b pb-2 text-center">Tutti i Materiali Acquisiti</h2>
-            <!-- La sezione di aggiunta/modifica prodotti è stata spostata in una modale separata per una migliore UX -->
             <div id="allBarcodesModalContent" class="custom-scrollbar">
                 <!-- I codici a barre con le immagini verranno caricati qui -->
             </div>
         </div>
     </div>
 
-    <!-- NUOVA Modale per Aggiungere/Modificare il Nome del Prodotto -->
+    <!-- Modale per Aggiungere/Modificare il Nome del Prodotto -->
     <div id="addProductNameModal" class="modal">
         <div class="modal-content dark:bg-gray-700">
             <span class="close-button close-add-product-name-modal dark:text-gray-300">&times;</span>
@@ -508,6 +555,26 @@
         </div>
     </div>
 
+    <!-- NUOVA Modale per il Riepilogo Quantità Prodotti -->
+    <div id="productSummaryModal" class="modal">
+        <div class="modal-content dark:bg-gray-700">
+            <span class="close-button close-product-summary-modal dark:text-gray-300">&times;</span>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 border-b pb-2 text-center">Riepilogo Quantità Materiali</h2>
+            <div id="productSummaryModalContent" class="custom-scrollbar">
+                <!-- Il riepilogo delle quantità verrà caricato qui -->
+                <p id="noSummaryItems" class="text-gray-500 dark:text-gray-400 text-center hidden">Nessun materiale acquisito per il riepilogo.</p>
+            </div>
+            <!-- Nuovo bottone per Condividi PDF nel Riepilogo Quantità -->
+            <button
+                id="shareSummaryPdfButton"
+                class="mt-6 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center space-x-2"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
+                <span>Condividi Riepilogo PDF</span>
+            </button>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast-notification"></div>
 
@@ -553,13 +620,17 @@
         const modal = document.getElementById('myModal'); // Modale messaggi/conferme
         const allBarcodesModal = document.getElementById('allBarcodesModal'); // Modale tutti i codici
         const productArchiveModal = document.getElementById('productArchiveModal'); // Modale Archivio Prodotti
-        const addProductNameModal = document.getElementById('addProductNameModal'); // NUOVA Modale Aggiungi Nome Prodotto
+        const addProductNameModal = document.getElementById('addProductNameModal'); // Modale Aggiungi Nome Prodotto
+        const productSummaryModal = document.getElementById('productSummaryModal'); // Modale Riepilogo Quantità
 
         // Contenuti delle modali
         const modalMessage = document.getElementById('modalMessage');
         const allBarcodesModalContent = document.getElementById('allBarcodesModalContent');
         const productArchiveListContent = document.getElementById('productArchiveListContent'); // Contenuto lista archivio
         const noProductArchiveItems = document.getElementById('noProductArchiveItems'); // Messaggio vuoto archivio
+        const productSummaryModalContent = document.getElementById('productSummaryModalContent'); // Contenuto riepilogo
+        const noSummaryItemsMessage = document.getElementById('noSummaryItems'); // Messaggio vuoto riepilogo
+
 
         // Campi e bottoni Archivio Prodotti (nella modale dedicata)
         const manageProductArchiveButton = document.getElementById('manageProductArchiveButton'); 
@@ -567,18 +638,22 @@
         const archiveProductNameInput = document.getElementById('archiveProductNameInput');
         const saveProductAssociationButton = document.getElementById('saveProductAssociationButton');
 
-        // NUOVI elementi DOM per la modale Aggiungi Nome Prodotto
+        // Elementi DOM per la modale Aggiungi Nome Prodotto
         const addProductNameModal_barcodeDisplay = document.getElementById('addProductNameModal_barcodeDisplay');
         const addProductNameModal_productNameInput = document.getElementById('addProductNameModal_productNameInput');
         const addProductNameModal_saveButton = document.getElementById('addProductNameModal_saveButton');
         const addProductNameModal_cancelButton = document.getElementById('addProductNameModal_cancelButton');
 
+        // Elemento DOM per il bottone Riepilogo e NUOVO bottone Condividi Riepilogo PDF
+        const showProductSummaryButton = document.getElementById('showProductSummaryButton');
+        const shareSummaryPdfButton = document.getElementById('shareSummaryPdfButton'); // NUOVO
 
         // Bottoni di chiusura modali
         const closeButton = document.querySelector('.close-button'); // Chiusura modale messaggi/conferme
         const closeAllBarcodesModalButton = document.querySelector('.close-all-barcodes-modal'); // Chiusura modale tutti i codici
         const closeProductArchiveModalButton = document.querySelector('.close-product-archive-modal'); // Chiusura modale archivio
-        const closeAddProductNameModalButton = document.querySelector('.close-add-product-name-modal'); // NUOVA chiusura modale aggiungi nome
+        const closeAddProductNameModalButton = document.querySelector('.close-add-product-name-modal'); // Chiusura modale aggiungi nome
+        const closeProductSummaryModalButton = document.querySelector('.close-product-summary-modal'); // Chiusura modale riepilogo
 
         // Variabili di stato
         let saveTimeout;
@@ -856,11 +931,13 @@
                     }, 800);
                 }
                 showAllBarcodesButton.classList.remove('hidden'); // Mostra il pulsante se ci sono codici
+                showProductSummaryButton.classList.remove('hidden'); // Mostra anche il riepilogo
                 noSavedBarcodesMessage.classList.add('hidden'); // Nascondi il messaggio "Nessun materiale salvato"
             } else {
                 savedCountSpan.classList.remove('text-green-500', 'dark:text-green-400');
                 savedCountSpan.classList.remove('count-flash-green');
                 showAllBarcodesButton.classList.add('hidden'); // Nascondi il pulsante se non ci sono codici
+                showProductSummaryButton.classList.add('hidden'); // Nascondi anche il riepilogo
                 noSavedBarcodesMessage.classList.remove('hidden'); // Mostra il messaggio "Nessun materiale salvato"
                 savedBarcodesList.appendChild(noSavedBarcodesMessage); // Aggiungi il messaggio alla lista
             }
@@ -877,8 +954,10 @@
                 sharePdfButton.classList.add('opacity-50', 'cursor-not-allowed');
                 showAllBarcodesButton.disabled = true; 
                 showAllBarcodesButton.classList.add('opacity-50', 'cursor-not-allowed');
-                manageProductArchiveButton.disabled = true; 
+                manageProductArchiveButton.disabled = true; // Disabilita se non ci sono codici
                 manageProductArchiveButton.classList.add('opacity-50', 'cursor-not-allowed');
+                showProductSummaryButton.disabled = true; // Disabilita anche il riepilogo
+                showProductSummaryButton.classList.add('opacity-50', 'cursor-not-allowed');
             } else {
                 deleteLastButton.disabled = false;
                 deleteLastButton.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -892,6 +971,8 @@
                 showAllBarcodesButton.classList.remove('opacity-50', 'cursor-not-allowed');
                 manageProductArchiveButton.disabled = false; 
                 manageProductArchiveButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                showProductSummaryButton.disabled = false;
+                showProductSummaryButton.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         }
 
@@ -939,24 +1020,24 @@
         });
 
         /**
-         * Opens the modal to add/edit the product name for a specific barcode.
-         * @param {string} barcode The barcode to edit/add.
+         * Apre la modale per aggiungere/modificare il nome del prodotto per un codice a barre specifico.
+         * @param {string} barcode Il codice a barre da modificare/aggiungere.
          */
         function openAddProductNameModal(barcode) {
-            barcodeToEdit = barcode; // Saves the global barcode
+            barcodeToEdit = barcode; // Salva il codice a barre globale
             addProductNameModal_barcodeDisplay.textContent = barcode;
-            addProductNameModal_productNameInput.value = ''; // Clears the name field
+            addProductNameModal_productNameInput.value = ''; // Pulisci il campo nome
             addProductNameModal.style.display = 'flex';
-            addProductNameModal_productNameInput.focus(); // Focus on the input
+            addProductNameModal_productNameInput.focus(); // Metti il focus sull'input
         }
 
         /**
-         * Closes the modal to add/edit the product name.
+         * Chiude la modale per aggiungere/modificare il nome del prodotto.
          */
         function closeAddProductNameModal() {
             addProductNameModal.style.display = 'none';
-            barcodeToEdit = null; // Resets the barcode being edited
-            addProductNameModal_productNameInput.value = ''; // Clears the input field
+            barcodeToEdit = null; // Resetta il codice a barre in modifica
+            addProductNameModal_productNameInput.value = ''; // Pulisci il campo input
         }
 
         function showAllBarcodesInModal() {
@@ -973,7 +1054,7 @@
                 barcodes.forEach(item => {
                     const barcodeItemDiv = document.createElement('div');
                     barcodeItemDiv.className = 'barcode-item-in-modal';
-                    // No longer need data-barcodeValue for item click, but leaving for reference
+                    // Non è più necessario il data-barcodeValue per il click sull'item, ma lo lascio per riferimento
                     // barcodeItemDiv.dataset.barcodeValue = item.value; 
 
                     const barcodeValueP = document.createElement('p');
@@ -988,13 +1069,13 @@
                         productNameP.textContent = productInArchive.name;
                         barcodeItemDiv.appendChild(productNameP);
                     } else {
-                        // If no name, add a placeholder or message
+                        // Se non c'è nome, aggiungi un placeholder o un messaggio
                         const productNameP = document.createElement('p');
                         productNameP.className = 'font-medium text-gray-500 dark:text-gray-400 text-sm italic';
                         productNameP.textContent = '(Nessun nome associato)';
                         barcodeItemDiv.appendChild(productNameP);
 
-                        // Add the icon to edit/add the name
+                        // Aggiungi l'icona per modificare/aggiungere il nome
                         const editIcon = document.createElement('button');
                         editIcon.className = 'edit-product-icon';
                         editIcon.innerHTML = `
@@ -1002,13 +1083,17 @@
                         `;
                         editIcon.title = "Aggiungi/Modifica nome prodotto";
                         editIcon.addEventListener('click', (e) => {
-                            e.stopPropagation(); // Prevents the click from propagating to the parent element
+                            e.stopPropagation(); // Evita che il click si propaghi all'elemento padre
                             openAddProductNameModal(item.value);
                         });
                         barcodeItemDiv.appendChild(editIcon);
                     }
                     
-                    // Removed timestamp display
+                    // Rimosso il display del timestamp
+                    // const timestampP = document.createElement('p');
+                    // timestampP.className = 'timestamp text-sm';
+                    // timestampP.textContent = new Date(item.timestamp).toLocaleString();
+                    // barcodeItemDiv.appendChild(timestampP);
 
                     const barcodeCanvasModal = document.createElement('canvas');
                     barcodeCanvasModal.className = 'w-full h-auto mt-2';
@@ -1016,7 +1101,7 @@
 
                     allBarcodesModalContent.appendChild(barcodeItemDiv);
 
-                    // Generate the barcode for the "All Acquired Materials" modal
+                    // Genera il codice a barre per la modale "Tutti i Materiali Acquisiti"
                     if (typeof JsBarcode !== 'undefined') {
                         try {
                             JsBarcode(barcodeCanvasModal, item.value, {
@@ -1028,7 +1113,7 @@
                                 lineColor: "#333"
                             });
                         } catch (e) {
-                            console.error("Error generating barcode for modal:", e);
+                            console.error("Errore nella generazione del codice a barre per la modale:", e);
                             const errorText = document.createElement('p');
                             errorText.className = 'text-red-500 text-xs';
                             errorText.textContent = 'Errore codice';
@@ -1044,7 +1129,117 @@
             allBarcodesModal.style.display = 'none';
         }
 
-        // Funzione per generare il PDF e restituire il Blob (per download o condivisione)
+        // --- Funzioni Riepilogo Quantità Prodotti ---
+
+        /**
+         * Calcola il riepilogo delle quantità dei prodotti e lo restituisce come oggetto.
+         * @returns {Object} Un oggetto dove le chiavi sono i nomi dei prodotti e i valori sono le quantità.
+         */
+        function getProductSummaryCounts() {
+            const savedBarcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
+            const productArchive = getProductArchive();
+            const productCounts = {}; // Oggetto per tenere il conteggio: { 'Nome Prodotto': quantità }
+
+            savedBarcodes.forEach(item => {
+                const productInArchive = productArchive.find(p => p.barcode === item.value);
+                const productName = productInArchive ? productInArchive.name : `Codice: ${item.value}`; // Usa il nome o il codice
+                
+                if (productCounts[productName]) {
+                    productCounts[productName]++;
+                } else {
+                    productCounts[productName] = 1;
+                }
+            });
+            return productCounts;
+        }
+
+        /**
+         * Visualizza il riepilogo delle quantità dei prodotti nella modale.
+         */
+        function displayProductSummary() {
+            const productCounts = getProductSummaryCounts();
+            productSummaryModalContent.innerHTML = ''; // Pulisce il contenuto precedente
+
+            if (Object.keys(productCounts).length === 0) {
+                noSummaryItemsMessage.classList.remove('hidden');
+                productSummaryModalContent.appendChild(noSummaryItemsMessage);
+                return;
+            } else {
+                noSummaryItemsMessage.classList.add('hidden');
+            }
+
+            // Ordina i prodotti per nome per una visualizzazione chiara
+            const sortedProducts = Object.keys(productCounts).sort((a, b) => a.localeCompare(b));
+
+            sortedProducts.forEach(name => {
+                const summaryItemDiv = document.createElement('div');
+                summaryItemDiv.className = 'summary-item';
+                summaryItemDiv.innerHTML = `
+                    <span class="product-name">${name}</span>
+                    <span class="product-quantity">${productCounts[name]} unità</span>
+                `;
+                productSummaryModalContent.appendChild(summaryItemDiv);
+            });
+        }
+
+        /**
+         * Apre la modale del riepilogo delle quantità.
+         */
+        function openProductSummaryModal() {
+            displayProductSummary(); // Genera e visualizza il riepilogo ogni volta che la modale viene aperta
+            productSummaryModal.style.display = 'flex';
+        }
+
+        /**
+         * Chiude la modale del riepilogo delle quantità.
+         */
+        function closeProductSummaryModal() {
+            productSummaryModal.style.display = 'none';
+        }
+
+        /**
+         * Genera un PDF del riepilogo quantità e lo restituisce come Blob.
+         */
+        function generateSummaryPdfBlob() {
+            const doc = new jsPDF();
+            let yPos = 10;
+
+            doc.setFontSize(22);
+            doc.text("Riepilogo Quantità Materiali", 105, yPos, { align: 'center' });
+            yPos += 20; // Spazio maggiore dopo il titolo
+
+            const productCounts = getProductSummaryCounts();
+            const sortedProducts = Object.keys(productCounts).sort((a, b) => a.localeCompare(b));
+
+            if (sortedProducts.length === 0) {
+                doc.setFontSize(14);
+                doc.text("Nessun materiale acquisito per il riepilogo.", 10, yPos);
+            } else {
+                doc.setFontSize(16);
+                doc.text("Dettagli Riepilogo:", 10, yPos);
+                yPos += 10;
+
+                sortedProducts.forEach(name => {
+                    const text = `${name}: ${productCounts[name]} unità`;
+                    
+                    // Controlla se c'è abbastanza spazio per il testo, altrimenti aggiungi una nuova pagina
+                    if (yPos + 10 > doc.internal.pageSize.height - 10) {
+                        doc.addPage();
+                        yPos = 10; // Reset yPos for new page
+                        doc.setFontSize(16);
+                        doc.text("Riepilogo Quantità Materiali (continua)", 105, yPos, { align: 'center' });
+                        yPos += 20; // Spazio dopo il titolo della nuova pagina
+                    }
+
+                    doc.setFontSize(12); // Dimensione testo per ogni riga
+                    doc.text(text, 10, yPos);
+                    yPos += 10; // Line height
+                });
+            }
+            return doc.output('blob');
+        }
+
+        // Funzione per generare il PDF dalla lista completa e restituire il Blob (per download o condivisione)
         function generatePdfBlob() {
             const doc = new jsPDF();
             let yPos = 10;
@@ -1191,6 +1386,30 @@
             }
         });
 
+        // NUOVO Listener per il pulsante "Condividi Riepilogo PDF"
+        shareSummaryPdfButton.addEventListener('click', async () => {
+            const pdfBlob = generateSummaryPdfBlob();
+            const fileName = "riepilogo_quantita_materiali.pdf";
+            const filesArray = [new File([pdfBlob], fileName, { type: 'application/pdf' })];
+
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: filesArray })) {
+                try {
+                    await navigator.share({
+                        files: filesArray,
+                        title: 'Riepilogo Quantità Materiali',
+                        text: 'Ecco il riepilogo delle quantità dei materiali acquisiti.',
+                    });
+                    showToast('Riepilogo PDF condiviso con successo!');
+                } catch (error) {
+                    console.error('Errore durante la condivisione del riepilogo:', error);
+                    showModal("Impossibile condividere direttamente il Riepilogo PDF. Si prega di scaricare il PDF (Esporta PDF) e condividerlo manualmente.");
+                }
+            } else {
+                showModal("Il tuo browser o dispositivo non supporta la condivisione diretta di file. Si prega di scaricare il Riepilogo PDF e condividerlo manualmente.");
+            }
+        });
+
+
         // --- Event Listeners ---
 
         closeButton.onclick = closeModal; // Modale messaggi/conferme
@@ -1200,14 +1419,16 @@
 
         closeAllBarcodesModalButton.onclick = closeAllBarcodesModal; // Modale tutti i codici
         closeProductArchiveModalButton.onclick = closeProductArchiveModal; // Modale archivio
-        closeAddProductNameModalButton.onclick = closeAddProductNameModal; // NUOVA Modale aggiungi nome
+        closeAddProductNameModalButton.onclick = closeAddProductNameModal; // Modale aggiungi nome
+        closeProductSummaryModalButton.onclick = closeProductSummaryModal; // Modale riepilogo
 
         // Clic fuori dalle modali per chiuderle
         window.onclick = function(event) {
             if (event.target == modal) closeModal();
             if (event.target == allBarcodesModal) closeAllBarcodesModal();
             if (event.target == productArchiveModal) closeProductArchiveModal(); 
-            if (event.target == addProductNameModal) closeAddProductNameModal(); // NUOVA modale
+            if (event.target == addProductNameModal) closeAddProductNameModal();
+            if (event.target == productSummaryModal) closeProductSummaryModal();
         }
 
         // Listener per il pulsante Salva/Aggiorna Associazione nella modale Archivio Prodotti
@@ -1222,7 +1443,7 @@
             lookupProductNameInArchiveModal(event.target.value);
         });
 
-        // NUOVI LISTENER per la modale Aggiungi Nome Prodotto
+        // Listener per la modale Aggiungi Nome Prodotto
         addProductNameModal_saveButton.addEventListener('click', () => {
             const productName = addProductNameModal_productNameInput.value.trim();
             if (barcodeToEdit && productName) {
@@ -1242,12 +1463,16 @@
             lookupProductName(''); // Inizializza il display del nome prodotto come "Nessun prodotto trovato"
             manageProductArchiveButton.disabled = false; // Assicura che il pulsante sia attivo all'avvio
             manageProductArchiveButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            showProductSummaryButton.disabled = false; // Assicura che sia attivo
+            showProductSummaryButton.classList.remove('opacity-50', 'cursor-not-allowed');
         });
 
         // Listener per il nuovo pulsante "Mostra Tutti i Codici"
         showAllBarcodesButton.addEventListener('click', showAllBarcodesInModal);
         // Listener per il nuovo pulsante "Gestisci Archivio Prodotti"
         manageProductArchiveButton.addEventListener('click', openProductArchiveModal);
+        // Listener per il pulsante "Riepilogo Quantità Prodotti"
+        showProductSummaryButton.addEventListener('click', openProductSummaryModal);
     </script>
 
 </body>
