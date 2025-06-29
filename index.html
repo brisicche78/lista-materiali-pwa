@@ -120,6 +120,64 @@
         .count-flash-green {
             animation: count-flash-green 0.8s ease-out;
         }
+
+        /* Stili per la nuova modale dei codici */
+        #allBarcodesModal .modal-content {
+            max-width: 600px; /* Larghezza maggiore per la lista */
+            height: 90%;
+            display: flex;
+            flex-direction: column;
+        }
+        #allBarcodesModalContent {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 10px; /* Per scrollbar */
+        }
+        #allBarcodesModalContent .barcode-item-in-modal {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f9fafb; /* Lighter background for items in modal */
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        #allBarcodesModalContent .barcode-item-in-modal p {
+            margin-bottom: 5px;
+            font-size: 1rem;
+            color: #374151; /* Darker text for readability */
+        }
+        #allBarcodesModalContent .barcode-item-in-modal .timestamp {
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+        #allBarcodesModalContent .barcode-item-in-modal canvas {
+            max-width: 90%;
+            height: auto;
+            border: 1px solid #e5e7eb;
+            background-color: white;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        /* Dark mode for the modal content */
+        .dark #allBarcodesModal .modal-content {
+            background-color: #1f2937; /* Darker background */
+            color: #f9fafb;
+        }
+        .dark #allBarcodesModalContent .barcode-item-in-modal {
+            background-color: #374151;
+        }
+        .dark #allBarcodesModalContent .barcode-item-in-modal p {
+            color: #f9fafb;
+        }
+        .dark #allBarcodesModalContent .barcode-item-in-modal .timestamp {
+            color: #9ca3af;
+        }
+        .dark #allBarcodesModalContent .barcode-item-in-modal canvas {
+            border-color: #4b5563;
+            background-color: #111827;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-gray-900 min-h-screen flex items-center justify-center p-4">
@@ -192,6 +250,15 @@
             <!-- I codici a barre salvati verranno inseriti qui dal JS -->
         </div>
 
+        <!-- Nuovo bottone per aprire la modale dei codici acquisiti -->
+        <button
+            id="showAllBarcodesButton"
+            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 mb-4 flex items-center justify-center space-x-2"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-gallery-vertical"><path d="M3 2h18v18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M7 8h10"/><path d="M7 12h10"/><path d="M7 16h10"/></svg>
+            <span>Mostra Tutti i Codici</span>
+        </button>
+
         <!-- Menu a tendina per la selezione dei codici a barre salvati (Spostato qui sotto) -->
         <div class="mb-0">
             <label for="savedBarcodesDropdown" class="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-2">
@@ -207,7 +274,7 @@
         </div>
     </div>
 
-    <!-- Modale per messaggi e conferme -->
+    <!-- Modale per messaggi e conferme (esistente) -->
     <div id="myModal" class="modal">
         <div class="modal-content dark:bg-gray-700 dark:text-white">
             <span class="close-button dark:text-gray-300">&times;</span>
@@ -216,6 +283,17 @@
                 <button id="modalConfirmBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg hidden">Sì, Elimina</button>
                 <button id="modalCancelBtn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hidden">Annulla</button>
                 <button id="modalOkBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nuova Modale per Mostra Tutti i Codici Acquisiti -->
+    <div id="allBarcodesModal" class="modal">
+        <div class="modal-content dark:bg-gray-700">
+            <span class="close-button close-all-barcodes-modal dark:text-gray-300">&times;</span>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 border-b pb-2 text-center">Tutti i Materiali Acquisiti</h2>
+            <div id="allBarcodesModalContent" class="custom-scrollbar">
+                <!-- I codici a barre con le immagini verranno caricati qui -->
             </div>
         </div>
     </div>
@@ -260,11 +338,17 @@
         const savedBarcodesList = document.getElementById('savedBarcodesList');
         const savedCountSpan = document.getElementById('savedCount');
         const savedBarcodesDropdown = document.getElementById('savedBarcodesDropdown');
+        const showAllBarcodesButton = document.getElementById('showAllBarcodesButton'); // Nuovo riferimento al pulsante
+        const allBarcodesModal = document.getElementById('allBarcodesModal'); // Nuova modale
+        const allBarcodesModalContent = document.getElementById('allBarcodesModalContent'); // Contenuto della nuova modale
+        const closeAllBarcodesModalButton = document.querySelector('.close-all-barcodes-modal'); // Pulsante chiudi nuova modale
+
 
         let saveTimeout; // Variabile per il debounce
+        let isProgrammaticChange = false; // <<< NUOVA VARIABILE FLAG >>>
 
         // Modale e i suoi bottoni
-        const modal = document.getElementById('myModal');
+        const modal = document.getElementById('myModal'); // Vecchia modale (messaggi/conferme)
         const modalMessage = document.getElementById('modalMessage');
         const closeButton = document.querySelector('.close-button');
         const modalConfirmBtn = document.getElementById('modalConfirmBtn');
@@ -301,7 +385,7 @@
             currentOnCancelCallback = null;
         }
 
-        // Listener per i bottoni della modale
+        // Listener per i bottoni della modale (messaggi/conferme)
         closeButton.onclick = closeModal;
         modalOkBtn.onclick = closeModal; // OK button just closes
 
@@ -323,6 +407,9 @@
         window.onclick = function(event) {
             if (event.target == modal) {
                 closeModal();
+            }
+            if (event.target == allBarcodesModal) { // Chiudi anche la nuova modale
+                closeAllBarcodesModal();
             }
         }
 
@@ -379,32 +466,35 @@
                 barcodePlaceholder.classList.add('hidden');
 
                 // Avvia il timer per il salvataggio automatico (dopo 700ms di inattività)
-                saveTimeout = setTimeout(() => {
-                    const valueToSave = trimmedBarcodeValue;
-                    
-                    if (valueToSave) {
-                        const barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
+                // <<< MODIFICA QUI: Controlla il flag isProgrammaticChange >>>
+                if (!isProgrammaticChange) {
+                    saveTimeout = setTimeout(() => {
+                        const valueToSave = trimmedBarcodeValue;
                         
-                        barcodes.push({
-                            value: valueToSave,
-                            timestamp: Date.now()
-                        });
-                        localStorage.setItem('savedBarcodes', JSON.stringify(barcodes));
-                        loadSavedBarcodes(true); // Passa true per attivare l'animazione del conteggio
-                        showToast(`Materiale "${valueToSave}" salvato automaticamente!`);
-                        
-                        // Aggiungi la classe di animazione e rimuovila dopo il suo ciclo
-                        barcodeInput.classList.add('flash-success');
-                        barcodeDisplayArea.classList.add('flash-success');
-                        setTimeout(() => {
-                            barcodeInput.classList.remove('flash-success');
-                            barcodeDisplayArea.classList.remove('flash-success');
-                        }, 1000); // La durata dell'animazione è 1s
-                        
-                        barcodeInput.value = ''; // Pulisci l'input del codice a barre
-                        generateAndDisplayBarcode(''); // Pulisci l'immagine generata
-                    }
-                }, 700);
+                        if (valueToSave) {
+                            const barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
+                            
+                            barcodes.push({
+                                value: valueToSave,
+                                timestamp: Date.now()
+                            });
+                            localStorage.setItem('savedBarcodes', JSON.stringify(barcodes));
+                            loadSavedBarcodes(true); // Passa true per attivare l'animazione del conteggio
+                            showToast(`Materiale "${valueToSave}" salvato automaticamente!`);
+                            
+                            // Aggiungi la classe di animazione e rimuovila dopo il suo ciclo
+                            barcodeInput.classList.add('flash-success');
+                            barcodeDisplayArea.classList.add('flash-success');
+                            setTimeout(() => {
+                                barcodeInput.classList.remove('flash-success');
+                                barcodeDisplayArea.classList.remove('flash-success');
+                            }, 1000); // La durata dell'animazione è 1s
+                            
+                            barcodeInput.value = ''; // Pulisci l'input del codice a barre
+                            generateAndDisplayBarcode(''); // Pulisci l'immagine generata
+                        }
+                    }, 700);
+                }
 
             } catch (e) {
                 console.error("Errore nella generazione del codice a barre EAN13:", e);
@@ -503,8 +593,10 @@
         function displaySelectedBarcode() {
             const selectedValue = savedBarcodesDropdown.value;
             if (selectedValue) {
+                isProgrammaticChange = true; // <<< Imposta il flag a true prima della modifica >>>
                 barcodeInput.value = selectedValue; // Inserisci il valore nel campo input
                 generateAndDisplayBarcode(selectedValue); // Genera e mostra il codice a barre principale
+                isProgrammaticChange = false; // <<< Resetta il flag a false dopo la modifica >>>
             } else {
                 barcodeInput.value = '';
                 generateAndDisplayBarcode(''); // Pulisci se non è selezionato nulla
@@ -556,6 +648,72 @@
             }
         });
 
+        // Funzione per popolare e mostrare la modale "Tutti i Materiali Acquisiti"
+        function showAllBarcodesInModal() {
+            const barcodes = JSON.parse(localStorage.getItem('savedBarcodes') || '[]');
+            allBarcodesModalContent.innerHTML = ''; // Pulisce il contenuto precedente
+
+            if (barcodes.length === 0) {
+                allBarcodesModalContent.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center p-4">Nessun materiale acquisito.</p>';
+            } else {
+                // Ordina i codici a barre per timestamp in ordine decrescente (più recenti per primi)
+                barcodes.sort((a, b) => b.timestamp - a.timestamp);
+
+                barcodes.forEach(item => {
+                    const barcodeItemDiv = document.createElement('div');
+                    barcodeItemDiv.className = 'barcode-item-in-modal'; // Usa la classe definita negli stili
+
+                    const barcodeValueP = document.createElement('p');
+                    barcodeValueP.className = 'font-semibold text-lg';
+                    barcodeValueP.textContent = item.value;
+                    barcodeItemDiv.appendChild(barcodeValueP);
+
+                    const timestampP = document.createElement('p');
+                    timestampP.className = 'timestamp text-sm';
+                    timestampP.textContent = new Date(item.timestamp).toLocaleString();
+                    barcodeItemDiv.appendChild(timestampP);
+
+                    const barcodeCanvasModal = document.createElement('canvas');
+                    barcodeCanvasModal.className = 'w-full h-auto mt-2';
+                    barcodeItemDiv.appendChild(barcodeCanvasModal);
+
+                    allBarcodesModalContent.appendChild(barcodeItemDiv);
+
+                    // Genera il codice a barre sulla canvas
+                    if (typeof JsBarcode !== 'undefined') {
+                        try {
+                            JsBarcode(barcodeCanvasModal, item.value, {
+                                format: "EAN13",
+                                displayValue: false, // Non mostrare il testo numerico sotto l'immagine qui
+                                height: 60,
+                                width: 2,
+                                margin: 0,
+                                lineColor: "#333"
+                            });
+                        } catch (e) {
+                            console.error("Errore nella generazione del codice a barre per la modale:", e);
+                            const errorText = document.createElement('p');
+                            errorText.className = 'text-red-500 text-xs';
+                            errorText.textContent = 'Errore codice';
+                            barcodeItemDiv.appendChild(errorText);
+                        }
+                    }
+                });
+            }
+            allBarcodesModal.style.display = 'flex'; // Mostra la modale
+        }
+
+        // Funzione per chiudere la modale "Tutti i Materiali Acquisiti"
+        function closeAllBarcodesModal() {
+            allBarcodesModal.style.display = 'none';
+        }
+
+        // Listener per il nuovo pulsante "Mostra Tutti i Codici"
+        showAllBarcodesButton.addEventListener('click', showAllBarcodesInModal);
+
+        // Listener per il pulsante di chiusura della nuova modale
+        closeAllBarcodesModalButton.onclick = closeAllBarcodesModal;
+
 
         // Funzione per generare il PDF e restituire il Blob (per download o condivisione)
         function generatePdfBlob() {
@@ -606,7 +764,7 @@
 
             if (barcodes.length > 0) {
                 doc.setFontSize(18);
-                doc.text("Materiale Usato:", 10, yPos); /* Changed from Materiali Scansionati */
+                doc.text("Materiale Usato:", 10, yPos);
                 yPos += 10;
 
                 barcodes.forEach((item, index) => {
@@ -616,7 +774,7 @@
                         doc.addPage();
                         yPos = 10;
                         doc.setFontSize(18);
-                        doc.text("Materiale Usato (continua)", 105, yPos, { align: 'center' }); /* Changed from Materiali Scansionati */
+                        doc.text("Materiale Usato (continua)", 105, yPos, { align: 'center' });
                         yPos += 10;
                     }
 
