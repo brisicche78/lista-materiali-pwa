@@ -358,9 +358,7 @@
         </h1>
 
         <div class="mb-6">
-            <label for="barcodeInput" class="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-2">
-                Inserisci 12 o 13 cifre per il codice a barre:
-            </label>
+            <!-- Rimosso l'etichetta "Inserisci 12 o 13 cifre per il codice a barre:" -->
             <input
                 type="number"
                 id="barcodeInput"
@@ -413,9 +411,9 @@
 
         <!-- Lista dei codici a barre "salvati" (ora solo il titolo e il conteggio) -->
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 border-b pb-2 text-center">Materiale Usato (<span id="savedCount">0</span>)</h2>
-        <!-- Questo div rimarrà vuoto tranne per il messaggio iniziale se la lista è vuota -->
+        <!-- Questo div rimarrà vuoto, senza il messaggio iniziale -->
         <div id="savedBarcodesList" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar mb-6">
-            <p id="noSavedBarcodes" class="text-gray-500 dark:text-gray-400 text-center hidden">Nessun materiale salvato. Inizia a digitarne e salvarne uno!</p>
+            <!-- I codici a barre salvati verranno inseriti qui dal JS -->
         </div>
 
         <!-- Nuovo bottone per aprire la modale dei codici acquisiti -->
@@ -612,9 +610,7 @@
         const sharePdfButton = document.getElementById('sharePdfButton');
         const savedBarcodesList = document.getElementById('savedBarcodesList');
         const savedCountSpan = document.getElementById('savedCount');
-        const showAllBarcodesButton = document.getElementById('showAllBarcodesButton'); 
-        const productNameDisplay = document.getElementById('productNameDisplay'); 
-        const noSavedBarcodesMessage = document.getElementById('noSavedBarcodes');
+        // const noSavedBarcodesMessage = document.getElementById('noSavedBarcodes'); // Rimosso l'elemento HTML, quindi non è più necessario recuperarlo
 
         // Modali
         const modal = document.getElementById('myModal'); // Modale messaggi/conferme
@@ -932,14 +928,14 @@
                 }
                 showAllBarcodesButton.classList.remove('hidden'); // Mostra il pulsante se ci sono codici
                 showProductSummaryButton.classList.remove('hidden'); // Mostra anche il riepilogo
-                noSavedBarcodesMessage.classList.add('hidden'); // Nascondi il messaggio "Nessun materiale salvato"
+                // noSavedBarcodesMessage.classList.add('hidden'); // Rimosso
             } else {
                 savedCountSpan.classList.remove('text-green-500', 'dark:text-green-400');
                 savedCountSpan.classList.remove('count-flash-green');
                 showAllBarcodesButton.classList.add('hidden'); // Nascondi il pulsante se non ci sono codici
                 showProductSummaryButton.classList.add('hidden'); // Nascondi anche il riepilogo
-                noSavedBarcodesMessage.classList.remove('hidden'); // Mostra il messaggio "Nessun materiale salvato"
-                savedBarcodesList.appendChild(noSavedBarcodesMessage); // Aggiungi il messaggio alla lista
+                // noSavedBarcodesMessage.classList.remove('hidden'); // Rimosso
+                // savedBarcodesList.appendChild(noSavedBarcodesMessage); // Rimosso
             }
 
 
@@ -954,8 +950,6 @@
                 sharePdfButton.classList.add('opacity-50', 'cursor-not-allowed');
                 showAllBarcodesButton.disabled = true; 
                 showAllBarcodesButton.classList.add('opacity-50', 'cursor-not-allowed');
-                // manageProductArchiveButton.disabled = true; // Rimosso: il pulsante deve essere sempre abilitato
-                // manageProductArchiveButton.classList.add('opacity-50', 'cursor-not-allowed'); // Rimosso
                 showProductSummaryButton.disabled = true; // Disabilita anche il riepilogo
                 showProductSummaryButton.classList.add('opacity-50', 'cursor-not-allowed');
             } else {
@@ -969,8 +963,6 @@
                 sharePdfButton.classList.remove('opacity-50', 'cursor-not-allowed');
                 showAllBarcodesButton.disabled = false; 
                 showAllBarcodesButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                // manageProductArchiveButton.disabled = false; // Rimosso
-                // manageProductArchiveButton.classList.remove('opacity-50', 'cursor-not-allowed'); // Rimosso
                 showProductSummaryButton.disabled = false;
                 showProductSummaryButton.classList.remove('opacity-50', 'cursor-not-allowed');
             }
@@ -1461,8 +1453,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadSavedBarcodes();
             lookupProductName(''); // Inizializza il display del nome prodotto come "Nessun prodotto trovato"
-            // manageProductArchiveButton.disabled = false; // Non più necessario qui, la logica è stata spostata/rimossa
-            // manageProductArchiveButton.classList.remove('opacity-50', 'cursor-not-allowed'); // Non più necessario
+            // manageProductArchiveButton.disabled = false; // Già gestito dalla logica precedente, non disabilitato
+            // manageProductArchiveButton.classList.remove('opacity-50', 'cursor-not-allowed'); // Già gestito
         });
 
         // Listener per il nuovo pulsante "Mostra Tutti i Codici"
