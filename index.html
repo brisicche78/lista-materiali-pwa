@@ -954,8 +954,8 @@
                 sharePdfButton.classList.add('opacity-50', 'cursor-not-allowed');
                 showAllBarcodesButton.disabled = true; 
                 showAllBarcodesButton.classList.add('opacity-50', 'cursor-not-allowed');
-                manageProductArchiveButton.disabled = true; // Disabilita se non ci sono codici
-                manageProductArchiveButton.classList.add('opacity-50', 'cursor-not-allowed');
+                // manageProductArchiveButton.disabled = true; // Rimosso: il pulsante deve essere sempre abilitato
+                // manageProductArchiveButton.classList.add('opacity-50', 'cursor-not-allowed'); // Rimosso
                 showProductSummaryButton.disabled = true; // Disabilita anche il riepilogo
                 showProductSummaryButton.classList.add('opacity-50', 'cursor-not-allowed');
             } else {
@@ -969,8 +969,8 @@
                 sharePdfButton.classList.remove('opacity-50', 'cursor-not-allowed');
                 showAllBarcodesButton.disabled = false; 
                 showAllBarcodesButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                manageProductArchiveButton.disabled = false; 
-                manageProductArchiveButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                // manageProductArchiveButton.disabled = false; // Rimosso
+                // manageProductArchiveButton.classList.remove('opacity-50', 'cursor-not-allowed'); // Rimosso
                 showProductSummaryButton.disabled = false;
                 showProductSummaryButton.classList.remove('opacity-50', 'cursor-not-allowed');
             }
@@ -1461,10 +1461,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadSavedBarcodes();
             lookupProductName(''); // Inizializza il display del nome prodotto come "Nessun prodotto trovato"
-            manageProductArchiveButton.disabled = false; // Assicura che il pulsante sia attivo all'avvio
-            manageProductArchiveButton.classList.remove('opacity-50', 'cursor-not-allowed');
-            showProductSummaryButton.disabled = false; // Assicura che sia attivo
-            showProductSummaryButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            // manageProductArchiveButton.disabled = false; // Non più necessario qui, la logica è stata spostata/rimossa
+            // manageProductArchiveButton.classList.remove('opacity-50', 'cursor-not-allowed'); // Non più necessario
         });
 
         // Listener per il nuovo pulsante "Mostra Tutti i Codici"
