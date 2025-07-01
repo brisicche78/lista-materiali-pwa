@@ -363,7 +363,7 @@
                 type="number"
                 id="barcodeInput"
                 class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                placeholder="Es. 123456789012"
+                placeholder="Es. 123456789012 o 12345678"
                 oninput="handleBarcodeInput(this.value)"
             />
         </div>
@@ -524,7 +524,7 @@
                     type="number"
                     id="archiveBarcodeInput"
                     class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white mb-3"
-                    placeholder="Inserisci 12 o 13 cifre"
+                    placeholder="Inserisci 8, 12 o 13 cifre"
                     oninput="lookupProductNameInArchiveModal(this.value)"
                 />
                 <label for="archiveProductNameInput" class="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-2">
@@ -733,8 +733,9 @@
                 showModal("Per salvare un prodotto, sono necessari sia il codice a barre che il nome del prodotto.");
                 return;
             }
-            if (!/^\d{12,13}$/.test(barcodeValue)) {
-                showModal("Il codice a barre deve essere di 12 o 13 cifre numeriche valide (EAN13).");
+            // Updated validation for EAN-8 or EAN-13
+            if (!/^\d{8}$|^\d{12,13}$/.test(barcodeValue)) {
+                showModal("Il codice a barre deve essere di 8, 12 o 13 cifre numeriche valide (EAN-8 o EAN-13).");
                 return;
             }
 
@@ -872,10 +873,10 @@
                 return;
             }
 
-            // Validation for EAN13
-            if (!/^\d{12,13}$/.test(trimmedBarcodeValue)) { // Checks for 12 or 13 digits
+            // Updated validation for EAN-8 or EAN-13
+            if (!/^\d{8}$|^\d{12,13}$/.test(trimmedBarcodeValue)) {
                 lookupProductName(''); // Pulisci display nome prodotto
-                showToast("EAN13 richiede esattamente 12 o 13 cifre numeriche.");
+                showToast("Il codice a barre deve essere di 8, 12 o 13 cifre numeriche valide (EAN-8 o EAN-13).");
                 return;
             }
 
@@ -928,14 +929,11 @@
                 }
                 showAllBarcodesButton.classList.remove('hidden'); // Mostra il pulsante se ci sono codici
                 showProductSummaryButton.classList.remove('hidden'); // Mostra anche il riepilogo
-                // noSavedBarcodesMessage.classList.add('hidden'); // Rimosso
             } else {
                 savedCountSpan.classList.remove('text-green-500', 'dark:text-green-400');
                 savedCountSpan.classList.remove('count-flash-green');
                 showAllBarcodesButton.classList.add('hidden'); // Nascondi il pulsante se non ci sono codici
                 showProductSummaryButton.classList.add('hidden'); // Nascondi anche il riepilogo
-                // noSavedBarcodesMessage.classList.remove('hidden'); // Rimosso
-                // savedBarcodesList.appendChild(noSavedBarcodesMessage); // Rimosso
             }
 
 
@@ -1046,8 +1044,6 @@
                 barcodes.forEach(item => {
                     const barcodeItemDiv = document.createElement('div');
                     barcodeItemDiv.className = 'barcode-item-in-modal';
-                    // Non è più necessario il data-barcodeValue per il click sull'item, ma lo lascio per riferimento
-                    // barcodeItemDiv.dataset.barcodeValue = item.value; 
 
                     const barcodeValueP = document.createElement('p');
                     barcodeValueP.className = 'font-semibold text-lg';
@@ -1081,12 +1077,6 @@
                         barcodeItemDiv.appendChild(editIcon);
                     }
                     
-                    // Rimosso il display del timestamp
-                    // const timestampP = document.createElement('p');
-                    // timestampP.className = 'timestamp text-sm';
-                    // timestampP.textContent = new Date(item.timestamp).toLocaleString();
-                    // barcodeItemDiv.appendChild(timestampP);
-
                     const barcodeCanvasModal = document.createElement('canvas');
                     barcodeCanvasModal.className = 'w-full h-auto mt-2';
                     barcodeItemDiv.appendChild(barcodeCanvasModal);
@@ -1095,9 +1085,16 @@
 
                     // Genera il codice a barre per la modale "Tutti i Materiali Acquisiti"
                     if (typeof JsBarcode !== 'undefined') {
+                        let barcodeFormat = "";
+                        if (item.value.length === 8) {
+                            barcodeFormat = "EAN8";
+                        } else if (item.value.length === 12 || item.value.length === 13) {
+                            barcodeFormat = "EAN13";
+                        }
+
                         try {
                             JsBarcode(barcodeCanvasModal, item.value, {
-                                format: "EAN13",
+                                format: barcodeFormat, // Use dynamic format
                                 displayValue: false, 
                                 height: 60,
                                 width: 2,
@@ -1245,14 +1242,21 @@
             const currentBarcodeValue = barcodeInput.value.trim();
             let currentBarcodeImageUrl = null;
 
-            // Genera l'immagine del codice a barre attuale solo se l'input è valido EAN13
-            // Questa sezione crea un canvas temporaneo solo per la generazione PDF
-            if (currentBarcodeValue && /^\d{12,13}$/.test(currentBarcodeValue)) {
+            // Genera l'immagine del codice a barre attuale solo se l'input è valido EAN-8 o EAN-13
+            if (currentBarcodeValue && (/^\d{8}$|^\d{12,13}$/.test(currentBarcodeValue))) {
                 try {
+                    // Determina il formato del codice a barre
+                    let barcodeFormat = "";
+                    if (currentBarcodeValue.length === 8) {
+                        barcodeFormat = "EAN8";
+                    } else if (currentBarcodeValue.length === 12 || currentBarcodeValue.length === 13) {
+                        barcodeFormat = "EAN13";
+                    }
+
                     // Crea un canvas temporaneo in memoria, non lo visualizza in pagina
                     const tempCanvasForCurrent = document.createElement('canvas');
                     JsBarcode(tempCanvasForCurrent, currentBarcodeValue, {
-                        format: "EAN13",
+                        format: barcodeFormat, // Use dynamic format
                         displayValue: true,
                         height: 80,
                         width: 2,
@@ -1263,7 +1267,7 @@
                     });
                     currentBarcodeImageUrl = tempCanvasForCurrent.toDataURL("image/png");
                 } catch (e) {
-                    console.error("Errore nella generazione del codice a barre EAN13 attuale per PDF:", e);
+                    console.error("Errore nella generazione del codice a barre attuale per PDF:", e);
                 }
             }
 
@@ -1306,8 +1310,16 @@
 
                     const tempCanvas = document.createElement('canvas');
                     try {
+                        // Determina il formato del codice a barre
+                        let barcodeFormat = "";
+                        if (item.value.length === 8) {
+                            barcodeFormat = "EAN8";
+                        } else if (item.value.length === 12 || item.value.length === 13) {
+                            barcodeFormat = "EAN13";
+                        }
+
                         JsBarcode(tempCanvas, item.value, {
-                            format: "EAN13",
+                            format: barcodeFormat, // Use dynamic format
                             displayValue: false,
                             height: 50,
                             width: 1.5,
@@ -1328,9 +1340,9 @@
                         doc.addImage(barcodeImgData, 'PNG', 10, yPos + 2, 80, 25);
                         yPos += 35;
                     } catch (e) {
-                        console.error("Errore nella generazione del codice a barre EAN13 per l'elemento lista:", e);
+                        console.error("Errore nella generazione del codice a barre per l'elemento lista:", e);
                         doc.setFontSize(14);
-                        doc.text(`- ${item.value} (Errore: formato EAN13 non valido)`, 10, yPos);
+                        doc.text(`- ${item.value} (Errore: formato codice a barre non valido)`, 10, yPos);
                         yPos += 15;
                     }
                 });
@@ -1378,7 +1390,7 @@
             }
         });
 
-        // NUOVO Listener per il pulsante "Condividi Riepilogo PDF"
+        // Listener per il pulsante "Condividi Riepilogo PDF"
         shareSummaryPdfButton.addEventListener('click', async () => {
             const pdfBlob = generateSummaryPdfBlob();
             const fileName = "riepilogo_quantita_materiali.pdf";
@@ -1453,8 +1465,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadSavedBarcodes();
             lookupProductName(''); // Inizializza il display del nome prodotto come "Nessun prodotto trovato"
-            // manageProductArchiveButton.disabled = false; // Già gestito dalla logica precedente, non disabilitato
-            // manageProductArchiveButton.classList.remove('opacity-50', 'cursor-not-allowed'); // Già gestito
         });
 
         // Listener per il nuovo pulsante "Mostra Tutti i Codici"
@@ -1467,3 +1477,4 @@
 
 </body>
 </html>
+
